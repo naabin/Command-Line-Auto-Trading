@@ -1,5 +1,5 @@
 #include "pe_trader.h"
 
 int main(int argc, char ** argv) {
-	// implement, or move, your trader program here for testing.
+	// implement your trader program to be fault-tolerant.
 }
