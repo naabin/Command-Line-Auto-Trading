@@ -75,7 +75,7 @@ int main(int argc, char **argv)
 		traders[i]->id = i;
 		traders[i]->position_price = (int*)calloc(exchanging_products->num_of_products, sizeof(int) * exchanging_products->num_of_products + 1);
 		traders[i]->position_qty = (int*)calloc(exchanging_products->num_of_products, sizeof(int) * exchanging_products->num_of_products + 1);
-		snprintf(traders[i]->tr_fifo_name, 20, FIFO_TRADER, i);
+		// snprintf(traders[i]->tr_fifo_name, 20, FIFO_TRADER, i);
 
 		// int ret = epoll_ctl(epoll_inst, EPOLL_CTL_ADD, tr_fds[i], &es);
 		// if (ret < 0) {
