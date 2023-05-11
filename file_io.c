@@ -43,7 +43,11 @@ void print_products(struct products *ex_products)
     printf("%s Trading %d products: ",LOG_PREFIX,  ex_products->num_of_products);
     for (int i = 0; i < ex_products->num_of_products; i++) 
     {
-        printf("%s ", ex_products->items[i]);
+        if (i == ex_products->num_of_products - 1) {
+            printf("%s\n", ex_products->items[i]);    
+        } else {
+            printf("%s ", ex_products->items[i]);    
+        }
     }
     printf("\n");
 }

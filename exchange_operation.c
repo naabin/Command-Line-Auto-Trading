@@ -135,17 +135,17 @@ void print_orderbook(struct order_book *book, struct products* available_product
         char *p_name = available_products->items[i];
         int product_found = search_product_in_book(p_name, book);
         if (!product_found) {
-            printf("%s\tProduct: %s; Buy level: %d; Sell levels: %d\n", LOG_PREFIX, available_products->items[i], 0, 0);
+            printf("%s\tProduct: %s; Buy levels: %d; Sell levels: %d\n", LOG_PREFIX, available_products->items[i], 0, 0);
         } else {
-            printf("%s\tProduct: %s; Buy level: %d; Sell levels: %d\n", LOG_PREFIX, p_name, book->buy_level, book->sell_level);
+            printf("%s\tProduct: %s; Buy levels: %d; Sell levels: %d\n", LOG_PREFIX, p_name, book->buy_level, book->sell_level);
             int original_size = book->size;
             while (!is_empty(book))
             {
                 struct order o = dequeue(book);
                     if (o.num_of_orders > 1) {
-                        printf("%s\t\t%s %d @ %d (%d orders)\n",LOG_PREFIX, o.order_type, o.quantity, o.price, o.num_of_orders);    
+                        printf("%s\t\t%s %d @ $%d (%d orders)\n",LOG_PREFIX, o.order_type, o.quantity, o.price, o.num_of_orders);    
                     } else {
-                        printf("%s\t\t%s %d @ %d (%d order)\n", LOG_PREFIX, o.order_type, o.quantity, o.price, o.num_of_orders);
+                        printf("%s\t\t%s %d @ $%d (%d order)\n", LOG_PREFIX, o.order_type, o.quantity, o.price, o.num_of_orders);
                     }
             }
             book->size = original_size;

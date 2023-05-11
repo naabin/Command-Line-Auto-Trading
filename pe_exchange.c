@@ -123,6 +123,11 @@ int main(int argc, char **argv)
 			if (traders[i]->active_status == 0 && traders[i]->trader_pid == TRADER_EXIT_STATUS) {
 				printf("%s Trader %d disconnected\n", LOG_PREFIX, traders[i]->id);
 				// TRADER_EXIT_STATUS = -1;
+				char e_fifo[20], t_fifo[20];
+				sprintf(e_fifo, FIFO_EXCHANGE, traders[i]->id);
+				sprintf(t_fifo, FIFO_TRADER, traders[i]->id);
+				unlink(e_fifo);
+				unlink(t_fifo);
 			}
 			if (traders[i]->active_status == 0) count++;
 		}
@@ -161,7 +166,8 @@ int main(int argc, char **argv)
 			if (strlen(buffer) <= 0){
 				// index += 1;
 				continue;
-			} 
+			}
+			buffer[strlen(buffer) - 1] = '\0';
 			printf("%s [T%d] Parsing command: <%s>\n", LOG_PREFIX, t->trader_fifo_id, buffer);
 			char * order_type = strtok(buffer, " ");
 			int order_id = atoi(strtok(NULL, " "));
@@ -174,7 +180,7 @@ int main(int argc, char **argv)
 			print_position(exchanging_products, traders, num_of_traders);
 			// free(new_order);
 			char m[128];
-			sprintf(m, "%s", "ACCEPTED");
+			sprintf(m, "%s", "ACCEPTED 0;");
 			if (write(t->exchange_fd, m, 128) < 1) {
 				perror("writing error: ");
 			}
