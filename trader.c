@@ -46,17 +46,17 @@ int main(int argc, char *argv[])
         perror("failed to open trader fd");
     }
     // printf("%d %d\n", read_fd, write_fd);
-    int num_of_orders = 2;
-    // char *message[4] = {
-    //     "BUY 0 GPU 30 500",
-    //     "BUY 1 GPU 30 501",
-    //     "BUY 2 GPU 30 501",
-    //     "BUY 3 GPU 30 502"
-    // };
-    char *message[2] = {
-        "SELL 0 GPU 99 511;",
-        "SELL 1 GPU 99 402;"
+    int num_of_orders = 4;
+    char *message[4] = {
+        "BUY 0 GPU 30 500;",
+        "BUY 1 GPU 30 501;",
+        "BUY 2 GPU 30 501;",
+        "BUY 3 GPU 30 502;"
     };
+    // char *message[2] = {
+    //     "SELL 0 GPU 99 511;",
+    //     "SELL 1 GPU 99 402;"
+    // };
     int index = 0;
     while (index < num_of_orders)
     {

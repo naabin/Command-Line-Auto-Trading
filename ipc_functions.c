@@ -19,8 +19,8 @@ void register_signal(int signum, void *handler)
 void create_fds(char* e_fd, char* t_fd, int i) {
     sprintf(e_fd, FIFO_EXCHANGE, i);
     sprintf(t_fd, FIFO_TRADER, i);
-    // unlink(e_fd);
-    // unlink(t_fd);
+    unlink(e_fd);
+    unlink(t_fd);
     if (mkfifo(e_fd, 0666) < 0) {
         perror("failed to create fd");
         exit(EXIT_FAILURE);

@@ -118,28 +118,10 @@ int main(int argc, char **argv)
 		// if (TRADER_CONNECTION == -1 && TRADER_EXIT_STATUS == -1) {
 		// 	pause();
 		// }
-		int count = 0;
-		for (int i = 0; i < num_of_traders; i++) {
-			if (traders[i]->active_status == 0 && traders[i]->trader_pid == TRADER_EXIT_STATUS) {
-				printf("%s Trader %d disconnected\n", LOG_PREFIX, traders[i]->id);
-				// TRADER_EXIT_STATUS = -1;
-				char e_fifo[20], t_fifo[20];
-				sprintf(e_fifo, FIFO_EXCHANGE, traders[i]->id);
-				sprintf(t_fifo, FIFO_TRADER, traders[i]->id);
-				unlink(e_fifo);
-				unlink(t_fifo);
-			}
-			if (traders[i]->active_status == 0) count++;
-		}
-		if (count == num_of_traders) {
-			printf("%s Trading completed\n", LOG_PREFIX);
-			printf("%s Exchange fees collected: $%d\n", LOG_PREFIX, 0);
-			break;
-		}
-		else if (TRADER_CONNECTION == -1) {
+		if (TRADER_CONNECTION == -1) {
 			pause();
 			continue;
-		} else {
+		} else if (index < num_of_traders) {
 			struct trader *t = traders[index];
 			if (t != NULL && t->active_status) {
 			int status;
@@ -155,16 +137,12 @@ int main(int argc, char **argv)
 				break;
 			}
 			if (TRADER_EXIT_STATUS == t->trader_pid) {
-				// kill(t->trader_pid, SIGCHLD);
 				t->active_status = 0;
 				index += 1;
-				// printf("%d\n", index);
-				// if (index > num_of_traders) break;
 				continue;
 			}
 			// printf("Trader exit status %d\n", TRADER_EXIT_STATUS);
 			if (strlen(buffer) <= 0){
-				// index += 1;
 				continue;
 			}
 			buffer[strlen(buffer) - 1] = '\0';
@@ -189,11 +167,26 @@ int main(int argc, char **argv)
 			}
 			memset(buffer, 0, 128);
 			}
+			
+		} else if (index == num_of_traders) {
+			int count = 0;
+			for (int i = 0; i < num_of_traders; i++) {
+				if (traders[i]->active_status == 0) {
+						printf("%s Trader %d disconnected\n", LOG_PREFIX, traders[i]->id);
+						char e_fifo[20], t_fifo[20];
+						sprintf(e_fifo, FIFO_EXCHANGE, traders[i]->id);
+						sprintf(t_fifo, FIFO_TRADER, traders[i]->id);
+						unlink(e_fifo);
+						unlink(t_fifo);
+				}
+				if (traders[i]->active_status == 0) count++;
+			}
+			if (count == num_of_traders) {
+				printf("%s Trading completed\n", LOG_PREFIX);
+				printf("%s Exchange fees collected: $%d\n", LOG_PREFIX, 0);
+				break;
+			}
 		}
-
-			// TRADER_CONNECTION = -1;
-			// break;
-
 				
 	}
 	for (int i = 0; i < num_of_traders; i++)

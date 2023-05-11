@@ -49,5 +49,4 @@ void print_products(struct products *ex_products)
             printf("%s ", ex_products->items[i]);    
         }
     }
-    printf("\n");
 }
