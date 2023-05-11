@@ -1,27 +1,15 @@
 #include "ipc_functions.h"
 
-void sigusr1_handler(int sig, siginfo_t *info, void *context) {
-    TRADER_CONNECTION = info->si_pid;
-}
-void sigusr2_handler(int sig, siginfo_t *info, void*context) {
-    EXIT_STATUS = 1;
-    
-}
-void sigchild_handler(int sig, siginfo_t *info, void*context) {
-    TRADER_EXIT_STATUS = info->si_pid;
-    sleep(0.1);
-}
-
-void register_signal(int signum)
+void register_signal(int signum, void *handler)
 {
     struct sigaction sig;
     sig.sa_flags = SA_RESTART | SA_SIGINFO;
     if (signum == SIGUSR1) {
-        sig.sa_sigaction = sigusr1_handler;
+        sig.sa_sigaction = handler;
     } else if (signum == SIGUSR2) {
-        sig.sa_sigaction = sigusr2_handler;
+        sig.sa_sigaction = handler;
     } else if (signum == SIGCHLD) {
-        sig.sa_sigaction = sigchild_handler;
+        sig.sa_sigaction = handler;
     }
     if (-1 == sigaction(signum, &sig, NULL)) {
         perror("Failed to register signal");

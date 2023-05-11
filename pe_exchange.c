@@ -6,12 +6,26 @@
 
 #include "pe_exchange.h"
 #define MAX_CONNECTIONS 5
+volatile int EXIT_STATUS = 0;
+volatile int TRADER_EXIT_STATUS = -1;
+volatile int TRADER_CONNECTION = -1;
 
 // static int compare_fd(const void *a, const void *b) {
 // 	struct epoll_event *ea = (struct epoll_event*)a;
 // 	struct epoll_event *eb = (struct epoll_event*)b;
 // 	return ea->data.fd - eb->data.fd;
 // }
+void sigusr1_handler(int sig, siginfo_t *info, void *context) {
+    TRADER_CONNECTION = info->si_pid;
+}
+void sigusr2_handler(int sig, siginfo_t *info, void*context) {
+    EXIT_STATUS = 1;
+    
+}
+void sigchild_handler(int sig, siginfo_t *info, void*context) {
+    TRADER_EXIT_STATUS = info->si_pid;
+    sleep(0.1);
+}
 
 int main(int argc, char **argv)
 {
@@ -22,12 +36,9 @@ int main(int argc, char **argv)
 	}
 	struct products *exchanging_products = read_exchaning_prodcuts_from_file(argv[1]);
 	print_products(exchanging_products);
-	EXIT_STATUS = 0;
-	TRADER_CONNECTION = -1;
-	TRADER_EXIT_STATUS = -1;
-	register_signal(SIGUSR1);
-	register_signal(SIGUSR2);
-	register_signal(SIGCHLD);
+	register_signal(SIGUSR1, sigusr1_handler);
+	register_signal(SIGUSR2, sigusr2_handler);
+	register_signal(SIGCHLD, sigchild_handler);
 	int num_of_traders = argc - 2;
 	struct trader **traders = (struct trader **)malloc(sizeof(struct trader *) * num_of_traders);
 	struct order_book *book = create_orderbook(10);

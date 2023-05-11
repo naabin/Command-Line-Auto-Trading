@@ -5,7 +5,4 @@
 #include "ipc_functions.h"
 #include "file_io.h"
 #define LOG_PREFIX "[PEX]"
-volatile int EXIT_STATUS;
-volatile int TRADER_EXIT_STATUS;
-volatile int TRADER_CONNECTION;
 #endif
