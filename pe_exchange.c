@@ -1,12 +1,192 @@
 /**
  * comp2017 - assignment 3
- * <your name>
- * <your unikey>
+ * Nabin Karki
+ * nkar7555
  */
 
 #include "pe_exchange.h"
+#define MAX_CONNECTIONS 5
 
-int main(int argc, char **argv) {
-	printf("TODO\n");
+// static int compare_fd(const void *a, const void *b) {
+// 	struct epoll_event *ea = (struct epoll_event*)a;
+// 	struct epoll_event *eb = (struct epoll_event*)b;
+// 	return ea->data.fd - eb->data.fd;
+// }
+
+int main(int argc, char **argv)
+{
+	if (argc < 2)
+	{
+		printf("Not enough arguments\n");
+		exit(EXIT_FAILURE);
+	}
+	struct products *exchanging_products = read_exchaning_prodcuts_from_file(argv[1]);
+	print_products(exchanging_products);
+	EXIT_STATUS = 0;
+	TRADER_CONNECTION = -1;
+	TRADER_EXIT_STATUS = -1;
+	register_signal(SIGUSR1);
+	register_signal(SIGUSR2);
+	register_signal(SIGCHLD);
+	int num_of_traders = argc - 2;
+	struct trader **traders = (struct trader **)malloc(sizeof(struct trader *) * num_of_traders);
+	struct order_book *book = create_orderbook(10);
+	if (argc <= 2) {
+		free(traders);
+		free_products(exchanging_products);
+		exit(EXIT_FAILURE);
+	}
+	int ex_fds[MAX_CONNECTIONS];
+	int tr_fds[MAX_CONNECTIONS];
+	pid_t pids[MAX_CONNECTIONS];
+	for (int i = 0; i < MAX_CONNECTIONS; i++) {
+		ex_fds[i] = -1;
+		tr_fds[i] = -1;
+	}
+	// int epoll_inst = epoll_create(MAX_CONNECTIONS);
+	for (int i = 0; i < num_of_traders; i++) {
+		char e_fd[20];
+		char t_fd[20];
+		create_fds(e_fd, t_fd, i);
+		pid_t pid = fork();
+		if (pid == 0) {
+			execute_trader_binary(i, argv[i + 2]);
+		}
+		if (pid > 0) {
+			pids[i] = pid;
+			ex_fds[i] = open(e_fd, O_WRONLY);
+			printf("%s Connected to %s\n", LOG_PREFIX, e_fd);
+			tr_fds[i] = open(t_fd, O_RDONLY);
+			printf("%s Connected to %s\n", LOG_PREFIX, t_fd);
+		}
+	}
+	for (int i = 0; i < num_of_traders; i++) {
+		// struct epoll_event es = {0};
+		// es.events = EPOLLIN | EPOLLET;
+		// es.data.ptr = calloc(1, sizeof(struct trader));
+		traders[i] = calloc(1, sizeof(struct trader));
+		traders[i]->exchange_fd = ex_fds[i];
+		traders[i]->exchange_fifo_id = i;
+		traders[i]->trader_pid = pids[i];
+		// snprintf(traders[i]->ex_fifo_name, 20, FIFO_EXCHANGE, i);
+		traders[i]->trader_fd = tr_fds[i];
+		traders[i]->trader_fifo_id = i;
+		traders[i]->active_status = 1;
+		traders[i]->id = i;
+		traders[i]->position_price = (int*)calloc(exchanging_products->num_of_products, sizeof(int) * exchanging_products->num_of_products + 1);
+		traders[i]->position_qty = (int*)calloc(exchanging_products->num_of_products, sizeof(int) * exchanging_products->num_of_products + 1);
+		snprintf(traders[i]->tr_fifo_name, 20, FIFO_TRADER, i);
+
+		// int ret = epoll_ctl(epoll_inst, EPOLL_CTL_ADD, tr_fds[i], &es);
+		// if (ret < 0) {
+		// 	perror("epoll_ctl: ");
+		// 	return 1;
+		// }
+	}
+	for (int i = 0; i < num_of_traders; i++) {
+		char message[128];
+		char *string = "MARKET OPEN;";
+		sprintf(message, "%s", string);
+		if (write(traders[i]->exchange_fd, message, strlen(message)) < 0) {
+			perror("Failed to write: ");
+		}
+		memset(message, 0, 128);
+	}
+	for (int i = 0; i < num_of_traders; i++) {
+		if (-1==kill(traders[i]->trader_pid, SIGUSR1)) {
+			perror("Failed to send signal");
+		};
+	}
+	// sleep(2);
+	
+	//Event loop
+	// struct epoll_event events[MAX_CONNECTIONS];
+	// qsort(events, ret, sizeof(struct epoll_event), compare_fd);
+	int index = 0;
+	while (1) {
+		// if (TRADER_CONNECTION == -1 && TRADER_EXIT_STATUS == -1) {
+		// 	pause();
+		// }
+		int count = 0;
+		for (int i = 0; i < num_of_traders; i++) {
+			if (traders[i]->active_status == 0 && traders[i]->trader_pid == TRADER_EXIT_STATUS) {
+				printf("%s Trader %d disconnected\n", LOG_PREFIX, traders[i]->id);
+				// TRADER_EXIT_STATUS = -1;
+			}
+			if (traders[i]->active_status == 0) count++;
+		}
+		if (count == num_of_traders) {
+			printf("%s Trading completed\n", LOG_PREFIX);
+			printf("%s Exchange fees collected: $%d\n", LOG_PREFIX, 0);
+			break;
+		}
+		else if (TRADER_CONNECTION == -1) {
+			pause();
+			continue;
+		} else {
+			struct trader *t = traders[index];
+			if (t != NULL && t->active_status) {
+			int status;
+			pid_t result = waitpid(t->trader_pid, &status, WNOHANG);
+			if (result == -1) {
+				perror("waitpid: ");
+			}
+			char buffer[128];
+			int r = read(t->trader_fd, buffer, 128);
+			if (r < 0) {
+				perror("Failed to read: ");
+				t->active_status = 0;
+				break;
+			}
+			if (TRADER_EXIT_STATUS == t->trader_pid) {
+				// kill(t->trader_pid, SIGCHLD);
+				t->active_status = 0;
+				index += 1;
+				// printf("%d\n", index);
+				// if (index > num_of_traders) break;
+				continue;
+			}
+			// printf("Trader exit status %d\n", TRADER_EXIT_STATUS);
+			if (strlen(buffer) <= 0){
+				// index += 1;
+				continue;
+			} 
+			printf("%s [T%d] Parsing command: <%s>\n", LOG_PREFIX, t->trader_fifo_id, buffer);
+			char * order_type = strtok(buffer, " ");
+			int order_id = atoi(strtok(NULL, " "));
+			char * product_name = strtok(NULL, " ");
+			int quantity = atoi(strtok(NULL, " "));
+			int price = atoi(strtok(NULL, ";"));
+			int trader_id = t->trader_fifo_id;
+			enqueue_order(book, order_type, order_id, product_name, quantity, price, trader_id);
+			print_orderbook(book, exchanging_products);
+			print_position(exchanging_products, traders, num_of_traders);
+			// free(new_order);
+			char m[128];
+			sprintf(m, "%s", "ACCEPTED");
+			if (write(t->exchange_fd, m, 128) < 1) {
+				perror("writing error: ");
+			}
+			if (-1 == kill(t->trader_pid, SIGUSR1)) {
+				perror("Failed to kill: ");
+			}
+			memset(buffer, 0, 128);
+			}
+		}
+
+			// TRADER_CONNECTION = -1;
+			// break;
+
+				
+	}
+	for (int i = 0; i < num_of_traders; i++)
+	{
+		free(traders[i]->position_qty);
+		free(traders[i]->position_price);
+		free(traders[i]);
+	}
+	free(traders);
+	free_products(exchanging_products);
+	free_orderbook(book);
 	return 0;
 }
