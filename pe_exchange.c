@@ -152,7 +152,7 @@ int main(int argc, char **argv)
 					}
 					// printf("Trader exit status %d\n", TRADER_EXIT_STATUS);
 					if (strlen(buffer) <= 0){
-						printf("No more to read\n");
+						// printf("No more to read\n");
 						continue;
 					}
 					for (int i = 0; i < strlen(buffer); i++) {
@@ -214,11 +214,6 @@ int main(int argc, char **argv)
 				if (traders[i]->trader_pid == TRADER_EXIT_STATUS) {
 						traders[i]->active_status = 0;
 						printf("%s Trader %d disconnected\n", LOG_PREFIX, traders[i]->id);
-						char e_fifo[20], t_fifo[20];
-						sprintf(e_fifo, FIFO_EXCHANGE, traders[i]->id);
-						sprintf(t_fifo, FIFO_TRADER, traders[i]->id);
-						unlink(e_fifo);
-						unlink(t_fifo);
 				}
 				if (traders[i]->active_status == 0) {
 					count++;
@@ -233,6 +228,11 @@ int main(int argc, char **argv)
 	printf("%s Exchange fees collected: $%d\n", LOG_PREFIX, 0);
 	for (int i = 0; i < num_of_traders; i++)
 	{
+		char e_fifo[20], t_fifo[20];
+		sprintf(e_fifo, FIFO_EXCHANGE, traders[i]->id);
+		sprintf(t_fifo, FIFO_TRADER, traders[i]->id);
+		unlink(e_fifo);
+		unlink(t_fifo);
 		free(traders[i]->position_qty);
 		free(traders[i]->position_price);
 		free(traders[i]);
