@@ -5,4 +5,9 @@
 #include "ipc_functions.h"
 #include "file_io.h"
 #define LOG_PREFIX "[PEX]"
+#define SELL "SELL"
+#define BUY "BUY"
+#define AMMEND "AMMEND"
+#define CANCEL "CANCEL"
+#define INVALID "INVALID"
 #endif

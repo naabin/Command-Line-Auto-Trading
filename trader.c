@@ -58,48 +58,44 @@ int main(int argc, char *argv[])
     //     "SELL 1 GPU 99 402;"
     // };
     int index = 0;
-    while (index < num_of_orders)
+    while (1)
     {
+        // pause();
         if (terminate) {
             printf("Terminating\n");
             break;
         }
         char read_buf[128];
         int ret = read(read_fd, read_buf, 128);
-        printf("%s\n", read_buf);
         if (-1 == ret)
         {
             perror("failed to read from trader pipe trader");
-            break;
         }
-        // printf("%s\n", read_buf);
+        printf("%s\n", read_buf);
         // sprintf(write_buf, "%s", msg);
-        ret = write(write_fd, message[index++], 128);
-        if (-1 == ret)
-        {
-            perror("failed to write to exchange");
+        if (index < num_of_orders) {
+            ret = write(write_fd, message[index++], 128);
+            if (-1 == ret)
+            {
+                perror("failed to write to exchange");
+                break;
+            }
+            // if (-1 == kill(getppid(), SIGUSR1)) {
+            //     perror("kill error: ");
+            // }
+            // printf("Written to exchange\n");
+            if (kill(getppid(), SIGUSR1) == -1) {
+                perror("kill: ");
+            }
+            pause();
+        } else {
+            if (kill(getppid(), SIGUSR2) == -1) {
+                perror("failed to send: ");
+            }
             break;
         }
-        if (-1 == kill(getppid(), SIGUSR1)) {
-            perror("kill error: ");
-        }
-        printf("Written to exchange\n");
-        // while (1)
-        // {
-        //     if (kill(getppid(), SIGUSR1) == -1)
-        //         continue;
-        //     // char b[128];
-        //     // ret = read(read_fd, b, 128);
-        //     // printf("%s\n", b);
-        //     // memset(b, 0, 128);
-        //     break;
-        // }
-        pause();
     }
     // printf("sending SIGUSR2 from trader_%d\n", trader_id);
-    if (kill(getppid(), SIGUSR2) == -1) {
-        perror("failed to send: ");
-    }
     close(write_fd);
     close(read_fd);
     // exit(EXIT_SUCCESS);
