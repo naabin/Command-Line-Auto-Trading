@@ -39,6 +39,7 @@ int main(int argc, char **argv)
 	register_signal(SIGUSR1, sigusr1_handler);
 	register_signal(SIGUSR2, sigusr2_handler);
 	register_signal(SIGCHLD, sigchild_handler);
+	register_signal(SIGINT, sigusr2_handler);
 	int num_of_traders = argc - 2;
 	struct trader **traders = (struct trader **)malloc(sizeof(struct trader *) * num_of_traders);
 	struct order_book *book = create_orderbook(10);
@@ -118,19 +119,25 @@ int main(int argc, char **argv)
 		// if (TRADER_CONNECTION == -1 && TRADER_EXIT_STATUS == -1) {
 		// 	pause();
 		// }
-		if (TRADER_CONNECTION == -1) {
-			pause();
-			continue;
-		} else if (index < num_of_traders) {
+		if (index < num_of_traders) {
+			// printf("%d\n", EXIT_STATUS);
 			struct trader *t = traders[index];
-			if (t != NULL && t->active_status) {
-				int status;
-				pid_t result = waitpid(t->trader_pid, &status, WNOHANG);
-				if (result == -1) {
-					perror("waitpid: ");
-					break;
-				}
-				else if (result == 0) {
+			if (TRADER_EXIT_STATUS == t->trader_pid) {
+				printf("%s Trader %d disconnected\n", LOG_PREFIX, t->id);
+				break;
+			}
+			else if (TRADER_CONNECTION == -1) {
+				pause();
+			// continue;
+			}
+			else if (t != NULL && t->active_status) {
+				// int status;
+				// pid_t result = waitpid(-1, &status, WNOHANG);
+				// if (result == -1) {
+				// 	perror("waitpid: ");
+				// 	// break;
+				// }
+				// else if (result == 0) {
 					char buffer[128];
 					int r = read(t->trader_fd, buffer, 128);
 					if (r < 0) {
@@ -145,6 +152,7 @@ int main(int argc, char **argv)
 					}
 					// printf("Trader exit status %d\n", TRADER_EXIT_STATUS);
 					if (strlen(buffer) <= 0){
+						printf("No more to read\n");
 						continue;
 					}
 					for (int i = 0; i < strlen(buffer); i++) {
@@ -175,31 +183,30 @@ int main(int argc, char **argv)
 					sleep(0.1);
 					memset(buffer, 0, 128);
 					char msg[128];
-					char *o_type = strcmp(order_type, "BUY") == 0 ? "SELL" : order_type;
+					char *o_type = strcmp(order_type, "BUY") == 0 ? "SELL" : "BUY";
 					sprintf(msg, "MARKET %s %s %d %d;", o_type, product_name, quantity, price);
 					// printf("Broadcasting message\n");
 					for (int i = 0; i < num_of_traders; i++) {
 						if (traders[i]->id != t->id) {
-							printf("writing to %d\n", traders[i]->id);
-							if (write(traders[i]->exchange_fd, buffer, 128) < 0) {
+							if (write(traders[i]->exchange_fd, msg, strlen(msg)) < 0) {
 								perror("write: ");
 							}
 							if (-1 == kill(traders[i]->trader_pid, SIGUSR1)) {
 								perror("kill: ");
 							}
-							// sleep(4);
+							sleep(0.1);
 						}	
 					}
-				}
-				else if (WIFEXITED(status)) {
-					printf("%s Trader %d disconnected\n", LOG_PREFIX, t->id);
-					char e_fifo[20], t_fifo[20];
-					sprintf(e_fifo, FIFO_EXCHANGE, t->id);
-					sprintf(t_fifo, FIFO_TRADER, t->id);
-					unlink(e_fifo);
-					unlink(t_fifo);
-					break;
-				}
+				// }
+				// else if (WIFEXITED(status)) {
+					// printf("%s Trader %d disconnected\n", LOG_PREFIX, t->id);
+					// char e_fifo[20], t_fifo[20];
+					// sprintf(e_fifo, FIFO_EXCHANGE, t->id);
+					// sprintf(t_fifo, FIFO_TRADER, t->id);
+					// unlink(e_fifo);
+					// unlink(t_fifo);
+					// if (index < num_of_traders) continue;
+					// else break;
 			}
 		} else if (index == num_of_traders) {
 			int count = 0;
@@ -221,7 +228,6 @@ int main(int argc, char **argv)
 				break;
 			}
 		}
-				
 	}
 	printf("%s Trading completed\n", LOG_PREFIX);
 	printf("%s Exchange fees collected: $%d\n", LOG_PREFIX, 0);

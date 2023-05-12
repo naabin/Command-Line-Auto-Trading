@@ -18,7 +18,7 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
     struct sigaction sig;
-    sig.sa_flags = SA_SIGINFO;
+    sig.sa_flags = SA_RESTART|SA_SIGINFO;
     sig.sa_sigaction = signal_handler;
     int signum = sigaction(SIGUSR1, &sig, NULL);
     signal(SIGCHLD, handler);
@@ -60,7 +60,6 @@ int main(int argc, char *argv[])
     int index = 0;
     while (1)
     {
-        // pause();
         if (terminate) {
             printf("Terminating\n");
             break;
@@ -72,6 +71,13 @@ int main(int argc, char *argv[])
             perror("failed to read from trader pipe trader");
         }
         printf("%s\n", read_buf);
+        if(-1 == kill(getppid(), SIGCHLD)){
+            perror("kill: ");
+        }
+        return 0;
+        char *market = strtok(read_buf, " ");
+        char *type = strtok(NULL, " ");
+        if (strcmp(type, "SELL") == 0) continue;
         // sprintf(write_buf, "%s", msg);
         if (index < num_of_orders) {
             ret = write(write_fd, message[index++], 128);
@@ -87,13 +93,17 @@ int main(int argc, char *argv[])
             if (kill(getppid(), SIGUSR1) == -1) {
                 perror("kill: ");
             }
-            pause();
-        } else {
-            if (kill(getppid(), SIGUSR2) == -1) {
-                perror("failed to send: ");
-            }
+            
+        }else {
+            sleep(2);
             break;
         }
+        // else {
+        //     if (kill(getppid(), SIGUSR1) == -1) {
+        //         perror("failed to send: ");
+        //     }
+            
+        // }
     }
     // printf("sending SIGUSR2 from trader_%d\n", trader_id);
     close(write_fd);
