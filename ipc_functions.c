@@ -21,13 +21,13 @@ void create_fds(char* e_fd, char* t_fd, int i) {
     sprintf(t_fd, FIFO_TRADER, i);
     unlink(e_fd);
     unlink(t_fd);
-    if (mkfifo(e_fd, 0666) < 0) {
+    if (mkfifo(e_fd, 0777) < 0) {
         perror("failed to create fd");
         exit(EXIT_FAILURE);
     } else {
         printf("%s Created FIFO %s\n",LOG_PREFIX, e_fd);
     }
-    if (mkfifo(t_fd, 0666) < 0) {
+    if (mkfifo(t_fd, 0777) < 0) {
 		perror("failed to create fd");
 	} else {
 		printf("%s Created FIFO %s\n",LOG_PREFIX, t_fd);
@@ -46,6 +46,5 @@ void execute_trader_binary(int argc, char* path) {
     {
         exit(EXIT_FAILURE);
     }
-    sleep(2);
     exit(0);
 }

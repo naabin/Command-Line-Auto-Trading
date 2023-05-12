@@ -46,17 +46,17 @@ int main(int argc, char *argv[])
         perror("failed to open trader fd");
     }
     // printf("%d %d\n", read_fd, write_fd);
-    int num_of_orders = 4;
-    char *message[4] = {
-        "BUY 0 GPU 30 500;",
-        "BUY 1 GPU 30 501;",
-        "BUY 2 GPU 30 501;",
-        "BUY 3 GPU 30 502;"
-    };
-    // char *message[2] = {
-    //     "SELL 0 GPU 99 511;",
-    //     "SELL 1 GPU 99 402;"
+    int num_of_orders = 2;
+    // char *message[4] = {
+    //     "BUY 0 GPU 30 500;",
+    //     "BUY 1 GPU 30 501;",
+    //     "BUY 2 GPU 30 501;",
+    //     "BUY 3 GPU 30 502;"
     // };
+    char *message[2] = {
+        "SELL 0 GPU 99 511;",
+        "SELL 1 GPU 99 402;"
+    };
     int index = 0;
     while (1)
     {
@@ -71,16 +71,10 @@ int main(int argc, char *argv[])
             perror("failed to read from trader pipe trader");
         }
         printf("%s\n", read_buf);
-        if(-1 == kill(getppid(), SIGCHLD)){
-            perror("kill: ");
-        }
-        return 0;
-        char *market = strtok(read_buf, " ");
-        char *type = strtok(NULL, " ");
-        if (strcmp(type, "SELL") == 0) continue;
+        // if (strcmp(type, "SELL") == 0) continue;
         // sprintf(write_buf, "%s", msg);
         if (index < num_of_orders) {
-            ret = write(write_fd, message[index++], 128);
+            ret = write(write_fd, message[index++], 18);
             if (-1 == ret)
             {
                 perror("failed to write to exchange");
@@ -93,9 +87,11 @@ int main(int argc, char *argv[])
             if (kill(getppid(), SIGUSR1) == -1) {
                 perror("kill: ");
             }
-            
-        }else {
+            printf("written to exchange\n");
             sleep(2);
+        }
+        // pause();   
+        if (index == num_of_orders) {
             break;
         }
         // else {
