@@ -79,14 +79,14 @@ int main(int argc, char **argv)
 		traders[i]->exchange_fd = ex_fds[i];
 		traders[i]->exchange_fifo_id = i;
 		traders[i]->trader_pid = pids[i];
-		sprintf(traders[i]->ex_fifo_name, FIFO_EXCHANGE, (short)i);
+		// sprintf(traders[i]->ex_fifo_name, FIFO_EXCHANGE, (short)i);
 		traders[i]->trader_fd = tr_fds[i];
 		traders[i]->trader_fifo_id = i;
 		traders[i]->active_status = 1;
 		traders[i]->id = i;
 		traders[i]->position_price = (int*)calloc(exchanging_products->num_of_products, sizeof(int) * exchanging_products->num_of_products + 1);
 		traders[i]->position_qty = (int*)calloc(exchanging_products->num_of_products, sizeof(int) * exchanging_products->num_of_products + 1);
-		sprintf(traders[i]->tr_fifo_name, FIFO_TRADER, (short)i);
+		// sprintf(traders[i]->tr_fifo_name, FIFO_TRADER, (short)i);
 		int ret = epoll_ctl(epoll_inst, EPOLL_CTL_ADD, tr_fds[i], &es);
 		if (ret < 0) {
 			perror("epoll_ctl: ");
