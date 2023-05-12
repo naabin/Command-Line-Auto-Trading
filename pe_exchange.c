@@ -79,14 +79,14 @@ int main(int argc, char **argv)
 		traders[i]->exchange_fd = ex_fds[i];
 		traders[i]->exchange_fifo_id = i;
 		traders[i]->trader_pid = pids[i];
-		sprintf(traders[i]->ex_fifo_name, FIFO_EXCHANGE, i);
+		sprintf(traders[i]->ex_fifo_name, FIFO_EXCHANGE, (short)i);
 		traders[i]->trader_fd = tr_fds[i];
 		traders[i]->trader_fifo_id = i;
 		traders[i]->active_status = 1;
 		traders[i]->id = i;
 		traders[i]->position_price = (int*)calloc(exchanging_products->num_of_products, sizeof(int) * exchanging_products->num_of_products + 1);
 		traders[i]->position_qty = (int*)calloc(exchanging_products->num_of_products, sizeof(int) * exchanging_products->num_of_products + 1);
-		sprintf(traders[i]->tr_fifo_name, FIFO_TRADER, i);
+		sprintf(traders[i]->tr_fifo_name, FIFO_TRADER, (short)i);
 		int ret = epoll_ctl(epoll_inst, EPOLL_CTL_ADD, tr_fds[i], &es);
 		if (ret < 0) {
 			perror("epoll_ctl: ");
@@ -126,6 +126,12 @@ int main(int argc, char **argv)
 			char buffer[128];
 			ssize_t bytes_read = read(t->trader_fd, buffer, 128);
 			if (bytes_read > 0) {
+				for (int i = 0; i < bytes_read; i++) {
+					if (buffer[i] == ';') {
+						buffer[i] = '\0';
+						break;
+					}
+				}
 				printf("%s [T%d] Parsing command: <%s>\n", LOG_PREFIX, t->trader_fifo_id, buffer);
 				char * order_type = strtok(buffer, " ");
 				int order_id = atoi(strtok(NULL, " "));
