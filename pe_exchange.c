@@ -124,74 +124,83 @@ int main(int argc, char **argv)
 		} else if (index < num_of_traders) {
 			struct trader *t = traders[index];
 			if (t != NULL && t->active_status) {
-			int status;
-			pid_t result = waitpid(t->trader_pid, &status, WNOHANG);
-			if (result == -1) {
-				perror("waitpid: ");
-				break;
-			}
-			char buffer[128];
-			int r = read(t->trader_fd, buffer, 128);
-			if (r < 0) {
-				perror("Failed to read: ");
-				// t->active_status = 0;
-				break;
-			}
-			if (TRADER_EXIT_STATUS == t->trader_pid) {
-				// t->active_status = 0;
-				index += 1;
-				continue;
-			}
-			// printf("Trader exit status %d\n", TRADER_EXIT_STATUS);
-			if (strlen(buffer) <= 0){
-				continue;
-			}
-			for (int i = 0; i < strlen(buffer); i++) {
-				if (buffer[i] == ';') {
-					buffer[i] = '\0';
+				int status;
+				pid_t result = waitpid(t->trader_pid, &status, WNOHANG);
+				if (result == -1) {
+					perror("waitpid: ");
+					break;
+				}
+				else if (result == 0) {
+					char buffer[128];
+					int r = read(t->trader_fd, buffer, 128);
+					if (r < 0) {
+						perror("Failed to read: ");
+						// t->active_status = 0;
+						break;
+					}
+					if (TRADER_EXIT_STATUS == t->trader_pid) {
+						// t->active_status = 0;
+						index += 1;
+						continue;
+					}
+					// printf("Trader exit status %d\n", TRADER_EXIT_STATUS);
+					if (strlen(buffer) <= 0){
+						continue;
+					}
+					for (int i = 0; i < strlen(buffer); i++) {
+						if (buffer[i] == ';') {
+							buffer[i] = '\0';
+							break;
+						}
+					}
+					printf("%s [T%d] Parsing command: <%s>\n", LOG_PREFIX, t->trader_fifo_id, buffer);
+					char * order_type = strtok(buffer, " ");
+					int order_id = atoi(strtok(NULL, " "));
+					char * product_name = strtok(NULL, " ");
+					int quantity = atoi(strtok(NULL, " "));
+					int price = atoi(strtok(NULL, ";"));
+					int trader_id = t->trader_fifo_id;
+					enqueue_order(book, order_type, order_id, product_name, quantity, price, trader_id);
+					print_orderbook(book, exchanging_products);
+					print_position(exchanging_products, traders, num_of_traders);
+					// free(new_order);
+					char m[128];
+					sprintf(m, "ACCEPTED %d;", order_id);
+					if (write(t->exchange_fd, m, 128) < 1) {
+						perror("writing error: ");
+					}
+					if (-1 == kill(t->trader_pid, SIGUSR1)) {
+						perror("Failed to kill: ");
+					}
+					sleep(0.1);
+					memset(buffer, 0, 128);
+					char msg[128];
+					char *o_type = strcmp(order_type, "BUY") == 0 ? "SELL" : order_type;
+					sprintf(msg, "MARKET %s %s %d %d;", o_type, product_name, quantity, price);
+					// printf("Broadcasting message\n");
+					for (int i = 0; i < num_of_traders; i++) {
+						if (traders[i]->id != t->id) {
+							printf("writing to %d\n", traders[i]->id);
+							if (write(traders[i]->exchange_fd, buffer, 128) < 0) {
+								perror("write: ");
+							}
+							if (-1 == kill(traders[i]->trader_pid, SIGUSR1)) {
+								perror("kill: ");
+							}
+							// sleep(4);
+						}	
+					}
+				}
+				else if (WIFEXITED(status)) {
+					printf("%s Trader %d disconnected\n", LOG_PREFIX, t->id);
+					char e_fifo[20], t_fifo[20];
+					sprintf(e_fifo, FIFO_EXCHANGE, t->id);
+					sprintf(t_fifo, FIFO_TRADER, t->id);
+					unlink(e_fifo);
+					unlink(t_fifo);
 					break;
 				}
 			}
-			printf("%s [T%d] Parsing command: <%s>\n", LOG_PREFIX, t->trader_fifo_id, buffer);
-			char * order_type = strtok(buffer, " ");
-			int order_id = atoi(strtok(NULL, " "));
-			char * product_name = strtok(NULL, " ");
-			int quantity = atoi(strtok(NULL, " "));
-			int price = atoi(strtok(NULL, ";"));
-			int trader_id = t->trader_fifo_id;
-			enqueue_order(book, order_type, order_id, product_name, quantity, price, trader_id);
-			print_orderbook(book, exchanging_products);
-			print_position(exchanging_products, traders, num_of_traders);
-			// free(new_order);
-			char m[128];
-			sprintf(m, "ACCEPTED %d;", order_id);
-			if (write(t->exchange_fd, m, 128) < 1) {
-				perror("writing error: ");
-			}
-			if (-1 == kill(t->trader_pid, SIGUSR1)) {
-				perror("Failed to kill: ");
-			}
-			sleep(0.1);
-			memset(buffer, 0, 128);
-			char msg[128];
-			char *o_type = strcmp(order_type, "BUY") == 0 ? "SELL" : order_type;
-			sprintf(msg, "MARKET %s %s %d %d;", o_type, product_name, quantity, price);
-			printf("Broadcasting message\n");
-			for (int i = 0; i < num_of_traders; i++) {
-				if (traders[i]->id != t->id) {
-					printf("writing to %d\n", traders[i]->id);
-					if (write(traders[i]->exchange_fd, buffer, 128) < 0) {
-						perror("write: ");
-					}
-					if (-1 == kill(traders[i]->trader_pid, SIGUSR1)) {
-						perror("kill: ");
-					}
-					// sleep(4);
-				}	
-			}
-			}
-			
-			
 		} else if (index == num_of_traders) {
 			int count = 0;
 			for (int i = 0; i < num_of_traders; i++) {
@@ -204,16 +213,18 @@ int main(int argc, char **argv)
 						unlink(e_fifo);
 						unlink(t_fifo);
 				}
-				if (traders[i]->active_status == 0) count++;
+				if (traders[i]->active_status == 0) {
+					count++;
+				} 
 			}
 			if (count == num_of_traders) {
-				printf("%s Trading completed\n", LOG_PREFIX);
-				printf("%s Exchange fees collected: $%d\n", LOG_PREFIX, 0);
 				break;
 			}
 		}
 				
 	}
+	printf("%s Trading completed\n", LOG_PREFIX);
+	printf("%s Exchange fees collected: $%d\n", LOG_PREFIX, 0);
 	for (int i = 0; i < num_of_traders; i++)
 	{
 		free(traders[i]->position_qty);
