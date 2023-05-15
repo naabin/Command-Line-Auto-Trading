@@ -27,6 +27,13 @@ void sigchild_handler(int sig, siginfo_t *info, void*context) {
     sleep(0.1);
 }
 
+void send_invalid_message_to_current_trader(struct trader *t, char *invalid_message)
+{
+	write_to_trader(t->exchange_fd, invalid_message, strlen(invalid_message));
+	send_signal_to_trader(t->trader_pid);
+	free(invalid_message);
+}
+
 int TOTAL_FEES = 0;
 
 int main(int argc, char **argv)
@@ -139,10 +146,19 @@ int main(int argc, char **argv)
 				char *invalid_message = malloc(sizeof(char)* INPUT_LENGTH);
 				sprintf(invalid_message, "INVALID;");
 				char * order_type = strtok(buffer, " ");
+				if (order_type == NULL) {
+					send_invalid_message_to_current_trader(t, invalid_message);
+					continue;
+				}
 				//TODO: handle error for all inputs with strtok
 				if (strcmp(CANCEL, order_type) == 0) {
 					//validate the id and process the cancel
-					int order_id = atoi(strtok(NULL, ";"));
+					char *id = strtok(NULL, ";");
+					if (id == NULL) {
+						send_invalid_message_to_current_trader(t, invalid_message);
+						continue;
+					}
+					int order_id = atoi(id);
 					int cancelled = cancel_order(book, order_id, t, exchanging_products);
 					// remove the order from the orderbook
 					if (cancelled) {
@@ -154,17 +170,29 @@ int main(int argc, char **argv)
 						free(msg);
 					} else {
 						//send invalid message
-						write_to_trader(t->exchange_fd, invalid_message, strlen(invalid_message));
-						send_signal_to_trader(t->trader_pid);
-						free(invalid_message);
+						send_invalid_message_to_current_trader(t, invalid_message);
 						continue;
 					}
 
 				} else if (strcmp(AMEND, order_type) == 0) {
 					// validate the id and ammend the order by given price and quantity
-					int order_id = atoi(strtok(NULL, " "));
-					int new_qty = atoi(strtok(NULL, " "));
-					int new_price = atoi(strtok(NULL, ";"));
+					char * id = strtok(NULL, " ");
+					if (id == NULL) {
+						send_invalid_message_to_current_trader(t, invalid_message);
+					}
+
+					int order_id = atoi(id);
+					char *qty = strtok(NULL, " ");
+					if (qty == NULL) {
+						send_invalid_message_to_current_trader(t, invalid_message);
+						continue;
+					}
+					int new_qty = atoi(qty);
+					char *price = strtok(NULL, ";");
+					if (price == NULL) {
+						send_invalid_message_to_current_trader(t, invalid_message);
+					}
+					int new_price = atoi(price);
 					int updated = update_order(book, order_id, new_qty, new_price, t);
 					if (updated) {
 						char* msg = malloc(sizeof(char) * INPUT_LENGTH);
@@ -175,9 +203,7 @@ int main(int argc, char **argv)
 						free(msg);
 					} else {
 						// send invalid
-						write_to_trader(t->exchange_fd, invalid_message, strlen(invalid_message));
-						send_signal_to_trader(t->trader_pid);
-						free(invalid_message);
+						send_invalid_message_to_current_trader(t, invalid_message);
 						continue;
 
 					}
@@ -185,9 +211,7 @@ int main(int argc, char **argv)
 					// validate the id and product
 					char *id = strtok(NULL, " ");
 					if (id == NULL) {
-						write_to_trader(t->exchange_fd, invalid_message, strlen(invalid_message));
-						send_signal_to_trader(t->trader_pid);
-						free(invalid_message);
+						send_invalid_message_to_current_trader(t, invalid_message);
 						continue;
 					}
 					int order_id = atoi(id);
@@ -199,24 +223,32 @@ int main(int argc, char **argv)
 						continue;
 					}
 					char * product_name = strtok(NULL, " ");
+					if (product_name == NULL) {
+						send_invalid_message_to_current_trader(t, invalid_message);
+					}
 					int product_exist = check_if_product_exist(exchanging_products, product_name);
 					if (!product_exist) {
 						// send invalid
-						write_to_trader(t->exchange_fd, invalid_message, strlen(invalid_message));
-						send_signal_to_trader(t->trader_pid);
-						free(invalid_message);
+						send_invalid_message_to_current_trader(t, invalid_message);
 						continue;
 					}
-					int quantity = atoi(strtok(NULL, " "));
+					char *qty = strtok(NULL, " ");
+					if (qty == NULL) {
+						send_invalid_message_to_current_trader(t, invalid_message);
+						continue;
+					}
+					int quantity = atoi(qty);
 					if (quantity < 1 || quantity > 999999) {
 						// send invalid
-						write_to_trader(t->exchange_fd, invalid_message, strlen(invalid_message));
-						send_signal_to_trader(t->trader_pid);
-						free(invalid_message);
+						send_invalid_message_to_current_trader(t, invalid_message);
 						continue;
 					}
-
-					int price = atoi(strtok(NULL, ";"));
+					char *p = strtok(NULL, ";");
+					if (p == NULL) {
+						send_invalid_message_to_current_trader(t, invalid_message);
+						continue;
+					}
+					int price = atoi(p);
 					if (price < 1 || price > 999999) {
 						write_to_trader(t->exchange_fd, invalid_message, strlen(invalid_message));
 						send_signal_to_trader(t->trader_pid);

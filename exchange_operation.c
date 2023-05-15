@@ -447,6 +447,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                             fill_message(new_order->trader->exchange_fd, new_order->trader_id, o->quantity);
                             signal_traders(o->trader->trader_pid);
                         }
+                        decrement_level(available_products, new_order);
                         //update the new order quantity
                         // update_order(book, new_order->order_id, r_qty, new_order->price, new_order->trader);
                         new_order->quantity = r_qty;
