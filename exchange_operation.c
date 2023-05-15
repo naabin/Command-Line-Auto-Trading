@@ -481,7 +481,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                             }
                             // update_order(book, o->ids[0], o->quantity, o->price, o->trader);
                             
-                        } else if (o->quantity - r_qty == 0) {
+                        } else if (o->quantity - r_qty < 0) {
                             int current_book_size = book->size;
                             o->fulfilled = 1;
                             decrement_level(available_products, o);
