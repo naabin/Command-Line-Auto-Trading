@@ -270,7 +270,10 @@ int main(int argc, char **argv)
 				for (int j = 0; j < num_of_traders; j++) {
 					if (pids[j] == t->trader_pid) {
 						connected--;
-						if (connected > 0) continue;
+						if (connected > 0){
+							printf("%s Trader %d disconnected\n",LOG_PREFIX, t->id);
+							continue;
+						} 
 						else break;
 					}
 				}
