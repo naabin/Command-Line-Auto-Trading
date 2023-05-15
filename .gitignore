@@ -15,7 +15,7 @@ build/
 !*.h
 !*.lst
 !Makefile
-
+!pe_trader
 !*.txt
 !*.md
 !*.sh
