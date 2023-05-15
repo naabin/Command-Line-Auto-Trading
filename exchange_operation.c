@@ -234,6 +234,7 @@ int cancel_order(struct order_book *book, int order_id, struct trader* t, struct
         } else {
             free(book->orders[index]->product_name);
             free(book->orders[index]->order_type);
+            free(book->orders[index]);
             for (int i = index; i <= book->size-1; i++) {
                 book->orders[i] = book->orders[i + 1];
             }
@@ -358,12 +359,12 @@ void log_match_order_to_stdout(struct order *o, struct order *new_order, int qty
     printf("%s Match: Order %d [T%d], New Order %d [T%d], value: $%d, fee: $%d.\n",
         LOG_PREFIX, o->order_id, o->trader_id, new_order->order_id, new_order->trader_id, value, fee);
     new_order->trader->position_qty[trader_pos] -= qty;
-    new_order->trader->position_price[trader_pos] += value;
+    new_order->trader->position_price[trader_pos] += (value - fee);
     
 }
 
 void process_sell_order(struct order *new_order, struct order_book *book, struct trader *t, 
-    struct products *available_products, write_fill fill_message, send_sig signal_traders, int fees)
+    struct products *available_products, write_fill fill_message, send_sig signal_traders, int *fees)
 {
     struct order_book *dup_book = create_orderbook(10);
     while (!is_empty(book)) {
@@ -375,8 +376,8 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                 if (o->quantity > new_order->quantity) {
                     // int qty = o->quantity - new_order->quantity;
                     int value = new_order->quantity * o->price;
-                    int fee = round(new_order->quantity * (FEE_PERCENTAGE/100.0));
-                    fees += fee;
+                    int fee = round(new_order->quantity * (FEE_PERCENTAGE * 0.01));
+                    *fees += fee;
                     //update the existing order
                     log_match_order_to_stdout(o, new_order, new_order->quantity, value, fee, available_products);
                     //send fill order
@@ -396,7 +397,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                         int r_qty = new_order->quantity - o->quantity;
                         int value = o->quantity * o->price;
                         int fee = roundl(value * (FEE_PERCENTAGE/100.0));
-                        fees += fee;
+                        *fees += fee;
                         log_match_order_to_stdout(o, new_order, o->quantity, value, fee, available_products);
                         //send the fill order
                         fill_message(o->trader->exchange_fd, o->order_id, o->quantity);
@@ -425,7 +426,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                 } else if (o->quantity == new_order->quantity) {
                     int value = o->quantity * o->price;
                     int fee = roundl(value * (FEE_PERCENTAGE/100.0));
-                    fees += fee;
+                    *fees += fee;
                     //stdout the match order
                     log_match_order_to_stdout(o, new_order, o->quantity, value, fee, available_products);
                     //send fill order

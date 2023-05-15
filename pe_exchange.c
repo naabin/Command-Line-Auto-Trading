@@ -251,7 +251,7 @@ int main(int argc, char **argv)
 					// process the given order
 					if (strcmp(order_type, SELL) == 0) {
 						process_sell_order
-						(new_order, book, t, exchanging_products, write_fill_order, send_signal_to_trader, TOTAL_FEES);
+						(new_order, book, t, exchanging_products, write_fill_order, send_signal_to_trader, &TOTAL_FEES);
 					} else if (strcmp(order_type, BUY) == 0) {
 
 					}

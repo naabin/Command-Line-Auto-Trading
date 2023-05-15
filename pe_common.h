@@ -82,5 +82,5 @@ int cancel_order(struct order_book *book, int order_id, struct trader *t, struct
 int update_order(struct order_book* book, int order_id, int new_quanity, int new_price, struct trader *t);
 int check_if_product_exist(struct products *available_products, char *new_product_name);
 void increment_level(struct products *available_products, char *order_type, char *product_name);
-void process_sell_order(struct order *new_order, struct order_book *book, struct trader *t, struct products *available_products, write_fill, send_sig, int fees);
+void process_sell_order(struct order *new_order, struct order_book *book, struct trader *t, struct products *available_products, write_fill, send_sig, int *fees);
 #endif
