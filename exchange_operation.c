@@ -191,6 +191,8 @@ int cancel_order(struct order_book *book, int order_id, struct trader* t, struct
                 if (id == order_id) {
                     // check if the trader owner matches with order
                     if (book->orders[i]->trader_id != t->id) {
+                        free(p_name);
+                        free(order_type);
                         return 0;
                     }
                     strcpy(p_name, book->orders[i]->product_name);
@@ -202,6 +204,8 @@ int cancel_order(struct order_book *book, int order_id, struct trader* t, struct
         else if (book->orders[i]->order_id == order_id) {
             // check if the trader owner matches with order
             if (book->orders[i]->trader_id != t->id) {
+                free(p_name);
+                free(order_type);
                 return 0;
             }
             index = i;
@@ -399,7 +403,6 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
     struct products *available_products, write_fill fill_message, send_sig signal_traders, int *fees)
 {
     struct order_book *dup_book = create_orderbook(10);
-    int o_size = book->size;
     while (!is_empty(book)) {
         struct order *o = dequeue(book);
         if ((strcmp(o->order_type, "SELL") == 0) || (o->trader_id == t->id)) {
@@ -466,13 +469,11 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                             // update_order(book, o->ids[0], o->quantity, o->price, o->trader);
                             
                         } else {
-                            int current_book_size = book->size;
-                            book->size = o_size;
-                            cancel_order(book, o->order_id, o->trader, available_products);
-                            book->size = current_book_size;
+                            o->fulfilled = 1;
+                            decrement_level(available_products, new_order);
                             break;
                         }
-                        decrement_level(available_products, new_order);
+                        
                     }
                 } else if (o->quantity == new_order->quantity) {
                     int value = o->quantity * o->price;
