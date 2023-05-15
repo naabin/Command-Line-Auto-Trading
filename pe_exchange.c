@@ -113,7 +113,6 @@ int main(int argc, char **argv)
 	sleep(0.1);
 	
 	//Event loop
-	int connected = num_of_traders;
 	while (1) {
 		// pause();
 		struct epoll_event events[MAX_CONNECTIONS];	
@@ -126,7 +125,7 @@ int main(int argc, char **argv)
 			struct trader* t = events[i].data.ptr;
 			char buffer[128];
 			ssize_t bytes_read = read(t->trader_fd, buffer, 128);
-			if (bytes_read > 0) {
+			if (bytes_read > 0 && t->active_status) {
 				for (int i = 0; i < bytes_read; i++) {
 					if (buffer[i] == ';') {
 						buffer[i] = '\0';
@@ -241,7 +240,7 @@ int main(int argc, char **argv)
 					char *market_message = malloc(sizeof(char) * INPUT_LENGTH);
 					sprintf(market_message, "MARKET %s %s %d %d;", order_type, product_name, quantity, price);
 					for (int i = 0; i < num_of_traders; i++) {
-						if (traders[i]->id != t->id) {
+						if (traders[i]->id != t->id && t->active_status) {
 							write_to_trader(traders[i]->exchange_fd, market_message, strlen(market_message));
 							send_signal_to_trader(traders[i]->trader_pid);
 						}
@@ -267,21 +266,22 @@ int main(int argc, char **argv)
 				print_position(exchanging_products, traders, num_of_traders);
 			}
 			else if (bytes_read == 0) {
-				for (int j = 0; j < num_of_traders; j++) {
-					if (pids[j] == t->trader_pid) {
-						connected--;
-						if (connected > 0){
-							continue;
-						} 
-						else break;
-					}
-				}
+				// end of file read reached
+				// do something
 			}
 		}
-		if (connected == 0) {
-			for (int i = 0; i < num_of_traders; i++) {
-				printf("%s Trader %d disconnected\n", LOG_PREFIX, traders[i]->id);
+		int active = 0;
+		for (int j = 0; j < num_of_traders; j++) {
+			if (TRADER_EXIT_STATUS == traders[j]->trader_pid) {
+				printf("%s Trader %d disconnected\n", LOG_PREFIX, traders[j]->id);
+				traders[j]->active_status = 0;
 			}
+			if (traders[j]->active_status) {
+				active++;
+			}
+		}
+		TRADER_EXIT_STATUS = -1;
+		if (active == 0) {
 			break;
 		}
 	}
