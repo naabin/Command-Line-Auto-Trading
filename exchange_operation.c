@@ -373,18 +373,18 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
         } else if (o->price > new_order->price) {
             // while (1) {
                 if (o->quantity > new_order->quantity) {
-                    int qty = o->quantity - new_order->quantity;
-                    int value = qty * o->price;
-                    int fee = roundl(qty * (FEE_PERCENTAGE/100.0));
+                    // int qty = o->quantity - new_order->quantity;
+                    int value = new_order->quantity * o->price;
+                    int fee = roundl(new_order->quantity * (FEE_PERCENTAGE/100.0));
                     fees += fee;
                     //update the existing order
-                    log_match_order_to_stdout(o, new_order, qty, value, fee, available_products);
+                    log_match_order_to_stdout(o, new_order, new_order->quantity, value, fee, available_products);
                     //send fill order
-                    fill_message(o->trader->exchange_fd, o->order_id, o->quantity);
+                    fill_message(o->trader->exchange_fd, o->order_id, new_order->quantity);
                     signal_traders(o->trader->trader_pid);
-                    fill_message(new_order->trader->exchange_fd, new_order->trader_id, o->quantity);
+                    fill_message(new_order->trader->exchange_fd, new_order->trader_id, new_order->quantity);
                     signal_traders(o->trader->trader_pid);
-                    update_order(book, o->order_id, o->quantity, o->price, o->trader);
+                    update_order(book, o->order_id, o->quantity - new_order->quantity, o->price, o->trader);
                     // remove new order
                     cancel_order(book, new_order->order_id, new_order->trader, available_products);
                     break;
@@ -397,21 +397,21 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                         fees += fee;
                         log_match_order_to_stdout(o, new_order, o->quantity, value, fee, available_products);
                         //send the fill order
-                        fill_message(o->trader->exchange_fd, o->order_id, r_qty);
+                        fill_message(o->trader->exchange_fd, o->order_id, o->quantity);
                         signal_traders(o->trader->trader_pid);
-                        fill_message(new_order->trader->exchange_fd, new_order->trader_id, r_qty);
+                        fill_message(new_order->trader->exchange_fd, new_order->trader_id, o->quantity);
                         signal_traders(o->trader->trader_pid);
                         //update the new order
-                        update_order(book, new_order->order_id, o->quantity, new_order->price, new_order->trader);
+                        update_order(book, new_order->order_id, r_qty, new_order->price, new_order->trader);
                         // remove the fulfilled order
                         if (o->num_of_orders > 1) {
-                            int *ids = o->ids;
+                            // int *ids = o->ids;
                             for (int i = 1; i < o->ids_length; i++) {
                                 o->ids[i - 1] = o->ids[i];
                             }
                             o->num_of_orders--;
                             o->ids_length--;
-                            update_order(book, ids[1], o->quantity, o->price, o->trader);
+                            update_order(book, o->ids[0], o->quantity, o->price, o->trader);
                             
                         } else {
                             cancel_order(book, o->order_id, o->trader, available_products);
