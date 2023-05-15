@@ -231,20 +231,13 @@ int main(int argc, char **argv)
 					free(accept_message);
 					// broadcast the message to other traders
 					char *market_message = malloc(sizeof(char) * INPUT_LENGTH);
-					char *o_type = malloc(sizeof(char) * 10);
-					if (strcmp(BUY, order_type) == 0) {
-						sprintf(o_type, "SELL");
-					} else {
-						sprintf(o_type, "BUY");
-					}
-					sprintf(market_message, "MARKET %s %s %d %d;", o_type, product_name, quantity, price);
+					sprintf(market_message, "MARKET %s %s %d %d;", order_type, product_name, quantity, price);
 					for (int i = 0; i < num_of_traders; i++) {
 						if (traders[i]->id != t->id) {
 							write_to_trader(traders[i]->exchange_fd, market_message, strlen(market_message));
 							send_signal_to_trader(traders[i]->trader_pid);
 						}
 					}
-					free(o_type);
 					free(market_message);
 					free(invalid_message);
 					// process the given order
