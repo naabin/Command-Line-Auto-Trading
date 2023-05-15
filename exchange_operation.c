@@ -371,16 +371,12 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
 {
     struct order_book *dup_book = create_orderbook(10);
     int o_size = book->size;
-    int full_filled = 0;
     while (!is_empty(book)) {
         struct order *o = dequeue(book);
         if ((strcmp(o->order_type, "SELL") == 0) || (o->trader_id == t->id)) {
             private_enqueue(dup_book, o);
-        
-        }else if (full_filled) {
-            break;
         }
-         else if (o->price >= new_order->price && !full_filled) {
+         else if (o->price >= new_order->price) {
                 if (o->quantity > new_order->quantity) {
                     // int qty = o->quantity - new_order->quantity;
                     int value = new_order->quantity * o->price;
@@ -401,7 +397,6 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                     cancel_order(book, new_order->order_id, new_order->trader, available_products);
                     book->size = current_book_size;
                     private_enqueue(dup_book, o);
-                    full_filled = 1;
                     break;
                 }
                 else if (o->quantity < new_order->quantity) {
@@ -501,6 +496,7 @@ void free_orderbook(struct order_book* book)
     while (!is_empty(book))
     {
         struct order *o = dequeue(book);
+        if (o == NULL) continue;
         if (o->num_of_orders > 1) {
             free(o->ids);
         }
