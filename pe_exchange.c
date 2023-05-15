@@ -252,7 +252,8 @@ int main(int argc, char **argv)
 						process_sell_order
 						(new_order, book, t, exchanging_products, write_fill_order, send_signal_to_trader, &TOTAL_FEES);
 					} else if (strcmp(order_type, BUY) == 0) {
-						printf("%s buy order processing\n", LOG_PREFIX);
+						// printf("%s buy order processing\n", LOG_PREFIX);
+						process_buy_order(new_order, book, t, exchanging_products, write_fill_order, send_signal_to_trader, &TOTAL_FEES);
 					}
 					// increment the trader's current order id
 					t->current_order_id++;

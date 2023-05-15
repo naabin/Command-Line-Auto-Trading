@@ -492,6 +492,89 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
     free_orderbook(dup_book);  
 }
 
+void process_buy_order(struct order *new_order, struct order_book *book, struct trader *t, struct products *available_products, 
+    write_fill fill_message, send_sig signal_traders, int *fees) {
+        for (int i = book->size; i > 0; i--) {
+            struct order *o = book->orders[i];
+            if (strcmp(o->order_type, BUY) == 0 || o->trader_id == t->id) {
+                continue;
+            }
+            else if (o->price <= new_order->price) {
+                if (o->quantity > new_order->quantity) {
+                    int value = new_order->quantity * o->price;
+                    int fee = roundl(value * (FEE_PERCENTAGE * 0.01));
+                    *fees += fee;
+                    log_match_order_to_stdout(o, new_order, new_order->quantity, value, fee, available_products);
+                    if (o->trader->active_status) {
+                        fill_message(o->trader->exchange_fd, o->order_id, new_order->quantity);
+                        signal_traders(o->trader->trader_pid);
+                    }
+                    if (new_order->trader->active_status) {
+                        fill_message(new_order->trader->exchange_fd, new_order->trader_id, new_order->quantity);
+                        signal_traders(o->trader->trader_pid);
+                    }
+                    o->quantity = o->quantity - new_order->quantity;
+                    new_order->fulfilled = 1;
+                    decrement_level(available_products, new_order);
+                    break;
+                } else if (o->quantity < new_order->quantity) {
+                    while (o->num_of_orders >= 1) {
+                        int r_qty = new_order->quantity - o->quantity;
+                        int value = o->quantity * o->price;
+                        int fee = roundl(value * (FEE_PERCENTAGE/100.0));
+                        *fees += fee;
+                        log_match_order_to_stdout(o, new_order, o->quantity, value, fee, available_products);
+                        //send the fill order
+                        if (o->trader->active_status) {
+                            fill_message(o->trader->exchange_fd, o->order_id, o->quantity);
+                            signal_traders(o->trader->trader_pid);
+                        }
+                        if (new_order->trader->active_status) {
+                            fill_message(new_order->trader->exchange_fd, new_order->trader_id, o->quantity);
+                            signal_traders(o->trader->trader_pid);
+                        }
+                        //update the new order quantity
+                        // update_order(book, new_order->order_id, r_qty, new_order->price, new_order->trader);
+                        new_order->quantity = r_qty;
+                        // remove the fulfilled order
+                        if (o->num_of_orders > 1) {
+                            // int *ids = o->ids;
+                            for (int i = 1; i < o->ids_length; i++) {
+                                o->ids[i - 1] = o->ids[i];
+                            }
+                            o->num_of_orders--;
+                            o->ids_length--;
+                            o->order_id = o->ids[0];
+                            if (o->num_of_orders == 1) {
+                                free(o->ids);
+                            }
+                        } else {
+                            o->fulfilled = 1;
+                            decrement_level(available_products, o);
+                            break;
+                        }
+                    }
+                } else if (o->quantity == new_order->quantity) {
+                    int value = o->quantity * o->price;
+                    int fee = roundl(value * (FEE_PERCENTAGE * 0.01));
+                    *fees += fee;
+                    log_match_order_to_stdout(o, new_order, o->quantity, value, fee, available_products);
+                    if (o->trader->active_status) {
+                        fill_message(o->trader->exchange_fd, o->order_id, o->quantity);
+                        signal_traders(o->trader->trader_pid);
+                    }
+                    if (new_order->trader->active_status) {
+                        fill_message(new_order->trader->exchange_fd, new_order->trader_id, o->quantity);
+                        signal_traders(o->trader->trader_pid);   
+                    }
+                    o->fulfilled = 1;
+                    new_order->fulfilled = 1;
+                    break;
+                }
+            }
+        }
+}
+
 void delete_order(struct order_book *book, struct order *o) {
     int index = -1;
     for (int i = 1; i <= book->size; i++) {
