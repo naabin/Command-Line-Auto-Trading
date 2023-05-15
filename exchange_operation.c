@@ -384,7 +384,8 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                     signal_traders(o->trader->trader_pid);
                     fill_message(new_order->trader->exchange_fd, new_order->trader_id, new_order->quantity);
                     signal_traders(o->trader->trader_pid);
-                    update_order(book, o->order_id, o->quantity - new_order->quantity, o->price, o->trader);
+                    // update_order(book, o->order_id, o->quantity - new_order->quantity, o->price, o->trader);
+                    o->quantity = o->quantity - new_order->quantity;
                     // remove new order
                     cancel_order(book, new_order->order_id, new_order->trader, available_products);
                     break;
@@ -401,8 +402,9 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                         signal_traders(o->trader->trader_pid);
                         fill_message(new_order->trader->exchange_fd, new_order->trader_id, o->quantity);
                         signal_traders(o->trader->trader_pid);
-                        //update the new order
-                        update_order(book, new_order->order_id, r_qty, new_order->price, new_order->trader);
+                        //update the new order quantity
+                        // update_order(book, new_order->order_id, r_qty, new_order->price, new_order->trader);
+                        new_order->quantity = r_qty;
                         // remove the fulfilled order
                         if (o->num_of_orders > 1) {
                             // int *ids = o->ids;
@@ -411,7 +413,8 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                             }
                             o->num_of_orders--;
                             o->ids_length--;
-                            update_order(book, o->ids[0], o->quantity, o->price, o->trader);
+                            o->order_id = o->ids[0];
+                            // update_order(book, o->ids[0], o->quantity, o->price, o->trader);
                             
                         } else {
                             cancel_order(book, o->order_id, o->trader, available_products);
