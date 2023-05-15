@@ -176,7 +176,7 @@ void print_position(struct products * ex_products, struct trader **traders, int 
     }
 }
 
-int cancel_order(struct order_book *book, int order_id, struct trader* t, struct products *available_products) {
+int cancel_order(struct order_book *book, int order_id, struct trader* t, struct products *available_products, struct trader **traders, int num_of_traders) {
     if (order_id < 0 || order_id > book->size) {
         return 0;
     }
@@ -239,6 +239,18 @@ int cancel_order(struct order_book *book, int order_id, struct trader* t, struct
                 free(book->orders[index]->ids);
             }
         } else {
+            for (int i = 0; i < num_of_traders; i++) {
+                if (traders[i]->id != book->orders[index]->trader_id && traders[i]->active_status) {
+                    char *msg = malloc(sizeof(char) * 1024);
+                    sprintf(msg, "MARKET %s %s %d %d;", book->orders[index]->order_type, book->orders[index]->product_name, book->orders[index]->order_id, 0);
+                    if (-1 == write(traders[i]->exchange_fd, msg, strlen(msg))) {
+                        perror("write error broadcasting cancel: ");
+                    }
+                    if (-1 == kill(traders[i]->trader_pid, SIGUSR1)) {
+                        perror("kill error while broadcasting cancelled order: ");
+                    }
+                }
+            }
             free(book->orders[index]->product_name);
             free(book->orders[index]->order_type);
             if (book->orders[index]->num_of_orders > 1) {
@@ -449,7 +461,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                             signal_traders(o->trader->trader_pid);
                         }
                         if (new_order->trader->active_status) {
-                            fill_message(new_order->trader->exchange_fd, new_order->trader_id, o->quantity);
+                            fill_message(new_order->trader->exchange_fd, new_order->order_id, o->quantity);
                             signal_traders(o->trader->trader_pid);
                         }
                         //update the new order quantity
@@ -469,10 +481,11 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                             }
                             // update_order(book, o->ids[0], o->quantity, o->price, o->trader);
                             
-                        } else {
+                        } else if (o->quantity - r_qty == 0) {
                             int current_book_size = book->size;
+                            o->fulfilled = 1;
+                            decrement_level(available_products, o);
                             book->size = o_size;
-                            cancel_order(book, o->order_id, o->trader, available_products);
                             book->size = current_book_size;
                             break;
                         }
@@ -493,8 +506,12 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                         signal_traders(o->trader->trader_pid);   
                     }
                     // remove both order from the orderbook
-                    cancel_order(book, new_order->order_id, new_order->trader, available_products);
-                    cancel_order(book, o->order_id, o->trader, available_products);
+                    o->fulfilled = 1;
+                    new_order->fulfilled = 1;
+                    decrement_level(available_products, o);
+                    decrement_level(available_products, new_order);
+                    // cancel_order(book, new_order->order_id, new_order->trader, available_products);
+                    // cancel_order(book, o->order_id, o->trader, available_products);
                     break;
                 }
         } 
@@ -565,7 +582,7 @@ void process_buy_order(struct order *new_order, struct order_book *book, struct 
                             if (o->num_of_orders == 1) {
                                 free(o->ids);
                             }
-                        } else {
+                        } else if ((o->quantity - r_qty) == 0) {
                             o->fulfilled = 1;
                             decrement_level(available_products, o);
                             break;

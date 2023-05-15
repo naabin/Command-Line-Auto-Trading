@@ -159,7 +159,7 @@ int main(int argc, char **argv)
 						continue;
 					}
 					int order_id = atoi(id);
-					int cancelled = cancel_order(book, order_id, t, exchanging_products);
+					int cancelled = cancel_order(book, order_id, t, exchanging_products, traders, num_of_traders);
 					// remove the order from the orderbook
 					if (cancelled) {
 						char *msg = malloc(sizeof(char) * INPUT_LENGTH);
