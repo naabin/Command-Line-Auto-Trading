@@ -316,7 +316,7 @@ int update_order(struct order_book* book, int order_id, int new_quanity, int new
             }
         }
         else if (book->orders[i]->order_id == order_id) {
-            if (book->orders[i]->trader_id != t->id) {
+            if (book->orders[i]->trader->id != t->id) {
                 return 0;
             }
             book->orders[i]->quantity = new_quanity;

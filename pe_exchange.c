@@ -196,7 +196,7 @@ int main(int argc, char **argv)
 					int updated = update_order(book, order_id, new_qty, new_price, t);
 					if (updated) {
 						char* msg = malloc(sizeof(char) * INPUT_LENGTH);
-						sprintf(msg, "UPDATED %d;", order_id);
+						sprintf(msg, "AMENDED %d;", order_id);
 						write_to_trader(t->exchange_fd, msg, strlen(msg));
 						send_signal_to_trader(t->trader_pid);
 						free(invalid_message);
