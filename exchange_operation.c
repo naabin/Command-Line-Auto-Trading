@@ -379,7 +379,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                 if (o->quantity > new_order->quantity) {
                     // int qty = o->quantity - new_order->quantity;
                     int value = new_order->quantity * o->price;
-                    long fee = roundl(value * (FEE_PERCENTAGE * 0.01));
+                    int fee = roundl(value * (FEE_PERCENTAGE * 0.01));
                     *fees += fee;
                     //update the existing order
                     log_match_order_to_stdout(o, new_order, new_order->quantity, value, fee, available_products);
@@ -426,12 +426,6 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                             
                         } else {
                             cancel_order(book, o->order_id, o->trader, available_products);
-                            if (o != NULL) {
-                                free(o->product_name);
-                                free(o->order_type);
-                                free(o);
-                                book->size--;
-                            }
                             break;
                         }
                     }
