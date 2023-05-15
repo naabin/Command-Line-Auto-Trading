@@ -88,7 +88,7 @@ struct order* enqueue_order(struct order_book *book, char * order_type, int orde
         for (int i = 1; i <= book->size; i++) {
             struct order *o1 = book->orders[i];
             if (o->price == o1->price && strcmp(o->product_name, o1->product_name) == 0 && (o->quantity == o1->quantity)
-             && (strcmp(o->order_type, o1->order_type) == 0)) {
+             && (strcmp(o->order_type, o1->order_type) == 0) && (o->trader_id == o1->trader_id)) {
                 found = 1;
                 found_index = i;
             }    

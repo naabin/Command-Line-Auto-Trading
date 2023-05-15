@@ -46,8 +46,8 @@ int main(int argc, char *argv[])
         perror("failed to open trader fd");
     }
     // printf("%d %d\n", read_fd, write_fd);
-    int num_of_orders = 5;
-    char *message[5] = {
+    int num_of_orders = 6;
+    char *message[6] = {
         "BUY 0 GPU 30 500;",
         // "BUY 1 Router 50 100;",
         // "AMEND 0 31 499;",
@@ -55,7 +55,8 @@ int main(int argc, char *argv[])
         "BUY 1 GPU 30 501;",
         "BUY 2 GPU 30 501;",
         "BUY 3 GPU 30 502;",
-        "BUY"
+        "AMEND 1 5 45;"
+        "BUY;"
         // "CANCEL 1;",
         // "CANCEL 2;",
         // "BUY 5 GPU 30 502;",
