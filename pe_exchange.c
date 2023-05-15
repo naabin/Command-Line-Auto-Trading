@@ -270,7 +270,8 @@ int main(int argc, char **argv)
 				for (int j = 0; j < num_of_traders; j++) {
 					if (pids[j] == t->trader_pid) {
 						connected--;
-						break;
+						if (connected > 0) continue;
+						else break;
 					}
 				}
 			}
