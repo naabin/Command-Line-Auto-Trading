@@ -496,7 +496,7 @@ void process_buy_order(struct order *new_order, struct order_book *book, struct 
     write_fill fill_message, send_sig signal_traders, int *fees) {
         for (int i = book->size; i > 0; i--) {
             struct order *o = book->orders[i];
-            if (strcmp(o->order_type, BUY) == 0 || o->trader_id == t->id) {
+            if (strcmp(o->order_type, BUY) == 0 || o->trader_id == t->id || (strcmp(o->product_name, new_order->product_name) != 0)) {
                 continue;
             }
             else if (o->price <= new_order->price) {
