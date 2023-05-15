@@ -61,6 +61,7 @@ struct order* enqueue_order(struct order_book *book, char * order_type, int orde
     struct order *o = malloc(sizeof(struct order));
     o->order_type = malloc(sizeof(char) * (strlen(order_type) + 1));
     o->ids_length = 0;
+    o->fulfilled = 0;
     strcpy(o->order_type, order_type);
     o->order_id = order_id;
     o->product_name = malloc(sizeof(char) * (strlen(product_name) + 1));
@@ -146,12 +147,14 @@ void print_orderbook(struct order_book *book, struct products* available_product
         while (!is_empty(book))
         {
             struct order *o = dequeue(book);
+            if (!o->fulfilled) {
             if (strcmp(o->product_name, p_name) == 0) {
                 if (o->num_of_orders > 1) {
                     printf("%s\t\t%s %d @ $%d (%d orders)\n",LOG_PREFIX, o->order_type, o->quantity * o->num_of_orders, o->price, o->num_of_orders);    
                 } else {
                     printf("%s\t\t%s %d @ $%d (%d order)\n", LOG_PREFIX, o->order_type, o->quantity, o->price, o->num_of_orders);
                 }
+            }
             }
         }
         book->size = original_size;
@@ -331,6 +334,20 @@ void increment_level(struct products* available_products, char* order_type, char
     }
 }
 
+void decrement_level(struct products *a_products, struct order *c_order) {
+    for (int i = 0; i < a_products->num_of_products; i++) {
+        char *p_name = a_products->itms[i]->product_name;
+        if (strcmp(p_name, c_order->order_type) == 0) {
+            if (strcmp(SELL, c_order->order_type) == 0) {
+                a_products->itms[i]->sell_level--;
+            }
+            else {
+                a_products->itms[i]->buy_level--;
+            }
+        }
+    }
+}
+
 void private_enqueue(struct order_book *book, struct order *o) {
     if (book->size == book->capaity) 
     {
@@ -392,10 +409,9 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                     // update_order(book, o->order_id, o->quantity - new_order->quantity, o->price, o->trader);
                     o->quantity = o->quantity - new_order->quantity;
                     // remove new order
-                    int curr_book_size = book->size;
-                    book->size = o_size;
-                    cancel_order(book, new_order->order_id, new_order->trader, available_products);
-                    book->size = curr_book_size;
+                    new_order->fulfilled = 1;
+                    decrement_level(available_products, new_order);
+                    // cancel_order(book, new_order->order_id, new_order->trader, available_products);
                     private_enqueue(dup_book, o);
                     break;
                 }
