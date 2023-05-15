@@ -390,20 +390,33 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                     break;
                 }
                 else if (o->quantity < new_order->quantity) {
-                    int r_qty = new_order->quantity - o->quantity;
-                    int value = o->quantity * o->price;
-                    int fee = roundl(value * (FEE_PERCENTAGE/100.0));
-                    fees += fee;
-                    log_match_order_to_stdout(o, new_order, o->quantity, value, fee, available_products);
-                    //send the fill order
-                    fill_message(o->trader->exchange_fd, o->order_id, r_qty);
-                    signal_traders(o->trader->trader_pid);
-                    fill_message(new_order->trader->exchange_fd, new_order->trader_id, r_qty);
-                    signal_traders(o->trader->trader_pid);
-                    //update the new order
-                    update_order(book, new_order->order_id, o->quantity, new_order->price, new_order->trader);
-                    // remove the fulfilled order
-                    cancel_order(book, o->order_id, o->trader, available_products);
+                    while (o->num_of_orders >= 1) {
+                        int r_qty = new_order->quantity - o->quantity;
+                        int value = o->quantity * o->price;
+                        int fee = roundl(value * (FEE_PERCENTAGE/100.0));
+                        fees += fee;
+                        log_match_order_to_stdout(o, new_order, o->quantity, value, fee, available_products);
+                        //send the fill order
+                        fill_message(o->trader->exchange_fd, o->order_id, r_qty);
+                        signal_traders(o->trader->trader_pid);
+                        fill_message(new_order->trader->exchange_fd, new_order->trader_id, r_qty);
+                        signal_traders(o->trader->trader_pid);
+                        //update the new order
+                        update_order(book, new_order->order_id, o->quantity, new_order->price, new_order->trader);
+                        // remove the fulfilled order
+                        if (o->num_of_orders > 1) {
+                            int *ids = o->ids;
+                            for (int i = 1; i < o->ids_length; i++) {
+                                o->ids[i - 1] = o->ids[i];
+                            }
+                            o->num_of_orders--;
+                            o->ids_length--;
+                            update_order(book, ids[1], o->quantity, o->price, o->trader);
+                            
+                        } else {
+                            cancel_order(book, o->order_id, o->trader, available_products);
+                        }
+                    }
                 } else if (o->quantity == new_order->quantity) {
                     int value = o->quantity * o->price;
                     int fee = roundl(value * (FEE_PERCENTAGE/100.0));
