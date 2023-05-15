@@ -271,7 +271,6 @@ int main(int argc, char **argv)
 					if (pids[j] == t->trader_pid) {
 						connected--;
 						if (connected > 0){
-							printf("%s Trader %d disconnected\n",LOG_PREFIX, t->id);
 							continue;
 						} 
 						else break;
