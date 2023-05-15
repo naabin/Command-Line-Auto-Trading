@@ -224,7 +224,7 @@ int main(int argc, char **argv)
 					// send the accept message
 					char *accept_message = malloc(sizeof(char) * INPUT_LENGTH);
 					sprintf(accept_message, "ACCEPTED %d;", order_id);
-					write_to_trader(t->exchange_fd, accept_message, INPUT_LENGTH);
+					write_to_trader(t->exchange_fd, accept_message, strlen(accept_message));
 					send_signal_to_trader(t->trader_pid);
 					free(accept_message);
 					// broadcast the message to other traders
@@ -233,7 +233,7 @@ int main(int argc, char **argv)
 					sprintf(market_message, "MARKET %s %s %d %d;", o_type, product_name, quantity, price);
 					for (int i = 0; i < num_of_traders; i++) {
 						if (traders[i]->id != t->id) {
-							write_to_trader(traders[i]->exchange_fd, market_message, INPUT_LENGTH);
+							write_to_trader(traders[i]->exchange_fd, market_message, strlen(market_message));
 							send_signal_to_trader(traders[i]->trader_pid);
 						}
 					}
