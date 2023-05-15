@@ -337,7 +337,7 @@ void increment_level(struct products* available_products, char* order_type, char
 void decrement_level(struct products *a_products, struct order *c_order) {
     for (int i = 0; i < a_products->num_of_products; i++) {
         char *p_name = a_products->itms[i]->product_name;
-        if (strcmp(p_name, c_order->order_type) == 0) {
+        if (strcmp(p_name, c_order->product_name) == 0) {
             if (strcmp(SELL, c_order->order_type) == 0) {
                 a_products->itms[i]->sell_level--;
             }
