@@ -429,7 +429,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                     o->quantity = o->quantity - new_order->quantity;
                     // remove new order
                     new_order->fulfilled = 1;
-                    decrement_level(available_products, new_order);
+                    decrement_level(available_products, o);
                     // cancel_order(book, new_order->order_id, new_order->trader, available_products);
                     private_enqueue(dup_book, o);
                     break;
@@ -466,11 +466,12 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                             if (o->num_of_orders == 1) {
                                 free(o->ids);
                             }
+                            decrement_level(available_products, o);
                             // update_order(book, o->ids[0], o->quantity, o->price, o->trader);
                             
                         } else {
                             o->fulfilled = 1;
-                            decrement_level(available_products, new_order);
+                            decrement_level(available_products, o);
                             break;
                         }
                         
