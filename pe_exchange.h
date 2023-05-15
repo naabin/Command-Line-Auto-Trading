@@ -10,4 +10,5 @@
 #define AMMEND "AMMEND"
 #define CANCEL "CANCEL"
 #define INVALID "INVALID"
+#define INPUT_LENGTH 128
 #endif

@@ -48,3 +48,25 @@ void execute_trader_binary(int argc, char* path) {
     }
     exit(0);
 }
+
+void write_to_trader(int fd, char* message, int size) {
+    if (-1 == write(fd, message, size)) {
+        perror("write error: ");
+    }
+}
+void send_signal_to_trader(pid_t trader_pid) {
+    if (-1 == kill(trader_pid, SIGUSR1)) {
+        perror("kill error: ");
+    }
+}
+
+void write_fill_order(int fd, int order_id, int qty)
+{
+    char *msg = malloc(sizeof(char) * INPUT_LENGTH);
+    sprintf(msg, "FILL %d %d;", order_id, qty);
+    if (-1 == write(fd, msg, INPUT_LENGTH)) {
+        perror("write error while filling: ");
+    }
+    sleep(0.2);
+    free(msg);
+}

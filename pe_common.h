@@ -14,11 +14,16 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <sys/select.h>
+#include <time.h>
 #include <sys/epoll.h>
+#include <math.h>
 
 #define FIFO_EXCHANGE "/tmp/pe_exchange_%d"
 #define FIFO_TRADER "/tmp/pe_trader_%d"
 #define FEE_PERCENTAGE 1
+
+typedef void (*write_fill)(int fd, int order_id, int qty);
+typedef void (*send_sig)(pid_t pid);
 
 struct order {
     int trader_id;
@@ -28,27 +33,34 @@ struct order {
     int num_of_orders;
     int quantity;
     int price;
+    int *ids;
+    int ids_length;
+    struct trader *trader;
 };
 
 struct order_book {
     char *product_name;
-    int buy_level;
-    int sell_level;
-    struct order *orders;
+    struct order **orders;
     int size;
     int capaity;
     int (*compare_orders)(struct order*, struct order*);
 };
 
+struct product {
+    int buy_level;
+    int sell_level;
+    char *product_name;
+};
 
 struct products
 {
     int num_of_products;
-    char **items;
+    struct product **itms;
 };
 
 struct trader {
     int id;
+    int current_order_id;
     pid_t trader_pid;
     int active_status;
     int exchange_fd;
@@ -64,6 +76,11 @@ struct trader {
 void print_orderbook(struct order_book *book, struct products*);
 struct order_book* create_orderbook(int order_size);
 void free_orderbook(struct order_book* book);
-void enqueue_order(struct order_book *book, char *, int, char*, int, int, int);
+struct order* enqueue_order(struct order_book *book, char *, int, char*, int, int, int, struct trader *t);
 void print_position(struct products *, struct trader **, int);
+int cancel_order(struct order_book *book, int order_id, struct trader *t, struct products* available_products);
+int update_order(struct order_book* book, int order_id, int new_quanity, int new_price, struct trader *t);
+int check_if_product_exist(struct products *available_products, char *new_product_name);
+void increment_level(struct products *available_products, char *order_type, char *product_name);
+void process_sell_order(struct order *new_order, struct order_book *book, struct trader *t, struct products *available_products, write_fill, send_sig);
 #endif

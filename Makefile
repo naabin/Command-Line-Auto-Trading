@@ -10,7 +10,7 @@ LDFLAGS=-lm
 all: $(TARGET)
 
 $(TARGET):$(OBJ)
-	$(CC) $(CFLAGS) -o $@ $(OBJ)
+	$(CC) $(CFLAGS) -o $@ $(OBJ) $(LDFLAGS)
 
 run:
 	./$(TARGET) products.txt pe_trader

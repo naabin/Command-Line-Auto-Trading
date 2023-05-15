@@ -84,6 +84,7 @@ int main(int argc, char **argv)
 		traders[i]->trader_fifo_id = i;
 		traders[i]->active_status = 1;
 		traders[i]->id = i;
+		traders[i]->current_order_id = 0;
 		traders[i]->position_price = (int*)calloc(exchanging_products->num_of_products, sizeof(int) * exchanging_products->num_of_products + 1);
 		traders[i]->position_qty = (int*)calloc(exchanging_products->num_of_products, sizeof(int) * exchanging_products->num_of_products + 1);
 		// sprintf(traders[i]->tr_fifo_name, FIFO_TRADER, (short)i);
@@ -133,42 +134,128 @@ int main(int argc, char **argv)
 					}
 				}
 				printf("%s [T%d] Parsing command: <%s>\n", LOG_PREFIX, t->trader_fifo_id, buffer);
+				//check if the product exist
+				// check the type of the order
+				// check the price of the quantity and price
+				char *invalid_message = malloc(sizeof(char)* INPUT_LENGTH);
+				sprintf(invalid_message, "INVALID;");
 				char * order_type = strtok(buffer, " ");
-				int order_id = atoi(strtok(NULL, " "));
-				char * product_name = strtok(NULL, " ");
-				int quantity = atoi(strtok(NULL, " "));
-				int price = atoi(strtok(NULL, ";"));
-				int trader_id = t->trader_fifo_id;
-				enqueue_order(book, order_type, order_id, product_name, quantity, price, trader_id);
+				if (strcmp(CANCEL, order_type) == 0) {
+					//validate the id and process the cancel
+					int order_id = atoi(strtok(NULL, ";"));
+					int cancelled = cancel_order(book, order_id, t, exchanging_products);
+					// remove the order from the orderbook
+					if (cancelled) {
+						char *msg = malloc(sizeof(char) * INPUT_LENGTH);
+						sprintf(msg, "CANCELLED %d;", order_id);
+						write_to_trader(t->exchange_fd, msg, 13);
+						send_signal_to_trader(t->trader_pid);
+						free(invalid_message);
+						free(msg);
+					} else {
+						//send invalid message
+						write_to_trader(t->exchange_fd, invalid_message, INPUT_LENGTH);
+						send_signal_to_trader(t->trader_pid);
+						free(invalid_message);
+						continue;
+					}
+
+				} else if (strcmp(AMMEND, order_type) == 0) {
+					// validate the id and ammend the order by given price and quantity
+					int order_id = atoi(strtok(NULL, " "));
+					int new_qty = atoi(strtok(NULL, " "));
+					int new_price = atoi(strtok(NULL, ";"));
+					int updated = update_order(book, order_id, new_qty, new_price, t);
+					if (updated) {
+						char* msg = malloc(sizeof(char) * INPUT_LENGTH);
+						sprintf(msg, "UPDATED %d;", order_id);
+						write_to_trader(t->exchange_fd, msg, INPUT_LENGTH);
+						send_signal_to_trader(t->trader_pid);
+						free(invalid_message);
+						free(msg);
+					} else {
+						// send invalid
+						write_to_trader(t->exchange_fd, invalid_message, INPUT_LENGTH);
+						send_signal_to_trader(t->trader_pid);
+						free(invalid_message);
+						continue;
+
+					}
+				} else if (strcmp(BUY, order_type) == 0 || strcmp(SELL, order_type) == 0) {
+					// validate the id and product
+					int order_id = atoi(strtok(NULL, " "));
+					if (order_id != t->current_order_id) {
+						// send invalid
+						write_to_trader(t->exchange_fd, invalid_message, INPUT_LENGTH);
+						send_signal_to_trader(t->trader_pid);
+						free(invalid_message);
+						continue;
+					}
+					char * product_name = strtok(NULL, " ");
+					int product_exist = check_if_product_exist(exchanging_products, product_name);
+					if (!product_exist) {
+						// send invalid
+						write_to_trader(t->exchange_fd, invalid_message, INPUT_LENGTH);
+						send_signal_to_trader(t->trader_pid);
+						free(invalid_message);
+						continue;
+					}
+					int quantity = atoi(strtok(NULL, " "));
+					if (quantity < 1 || quantity > 999999) {
+						// send invalid
+						write_to_trader(t->exchange_fd, invalid_message, INPUT_LENGTH);
+						send_signal_to_trader(t->trader_pid);
+						free(invalid_message);
+						continue;
+					}
+
+					int price = atoi(strtok(NULL, ";"));
+					if (price < 1 || price > 999999) {
+						write_to_trader(t->exchange_fd, invalid_message, INPUT_LENGTH);
+						send_signal_to_trader(t->trader_pid);
+						free(invalid_message);
+						continue;
+					}
+					int trader_id = t->id;
+					//add order to the order book
+					struct order *new_order = enqueue_order(book, order_type, order_id, product_name, quantity, price, trader_id, t);
+					//incerement the level of the product
+					increment_level(exchanging_products, order_type, product_name);
+					// send the accept message
+					char *accept_message = malloc(sizeof(char) * INPUT_LENGTH);
+					sprintf(accept_message, "ACCEPTED %d;", order_id);
+					write_to_trader(t->exchange_fd, accept_message, INPUT_LENGTH);
+					send_signal_to_trader(t->trader_pid);
+					free(accept_message);
+					// broadcast the message to other traders
+					char *market_message = malloc(sizeof(char) * INPUT_LENGTH);
+					char *o_type = strcmp(BUY, order_type) == 0 ? "SELL ": "BUY ";
+					sprintf(market_message, "MARKET %s %s %d %d;", o_type, product_name, quantity, price);
+					for (int i = 0; i < num_of_traders; i++) {
+						if (traders[i]->id != t->id) {
+							write_to_trader(traders[i]->exchange_fd, market_message, INPUT_LENGTH);
+							send_signal_to_trader(traders[i]->trader_pid);
+						}
+					}
+					free(market_message);
+					free(invalid_message);
+					// process the given order
+					if (strcmp(order_type, SELL) == 0) {
+						process_sell_order
+						(new_order, book, t, exchanging_products, write_fill_order, send_signal_to_trader);
+					} else if (strcmp(order_type, BUY) == 0) {
+
+					}
+					// increment the trader's current order id
+					t->current_order_id++;
+				} else {
+					// Provided command is invalid. 
+					write_to_trader(t->trader_fd, invalid_message, INPUT_LENGTH);
+					send_signal_to_trader(t->trader_pid);
+					free(invalid_message);
+				}
 				print_orderbook(book, exchanging_products);
 				print_position(exchanging_products, traders, num_of_traders);
-				char m[128];
-				sprintf(m, "ACCEPTED %d;", order_id);
-				if (write(t->exchange_fd, m, 128) < 1) {
-					perror("writing error: ");
-				}
-				if (-1 == kill(t->trader_pid, SIGUSR1)) {
-					perror("Failed to kill: ");
-				}
-				pause();
-				memset(buffer, 0, 128);
-				char msg[128];
-				char *o_type = strcmp(order_type, "BUY") == 0 ? "SELL" : "BUY";
-				sprintf(msg, "MARKET %s %s %d %d;", o_type, product_name, quantity, price);
-				// printf("Broadcasting message\n");
-				for (int i = 0; i < num_of_traders; i++) {
-					if (traders[i]->id != t->id) {
-						if (write(traders[i]->exchange_fd, msg, 128) < 0) {
-							perror("write: ");
-						}
-						if (-1 == kill(traders[i]->trader_pid, SIGUSR1)) {
-							perror("kill: ");
-						}
-						sleep(0.2);
-					}	
-				}
-				memset(msg, 0, 128);
-				// pause();
 			}
 			else if (bytes_read == 0) {
 				for (int j = 0; j < num_of_traders; j++) {
@@ -182,69 +269,8 @@ int main(int argc, char **argv)
 		}
 		if (connected == 0) {
 			printf("%s Trader %d disconnected\n", LOG_PREFIX, current_trader_id);
-			// close(t->exchange_fd);
-			// close(t->trader_fd);
-			// unlink(t->ex_fifo_name);
-			// unlink(t->tr_fifo_name);
 			break;
 		}
-		// if (index < num_of_traders) {
-		// 	// printf("%d\n", EXIT_STATUS);
-		// 	struct trader *t = traders[index];
-		// 	if (TRADER_EXIT_STATUS == t->trader_pid) {
-		// 		index = num_of_traders;
-		// 	}
-		// 	else if (TRADER_CONNECTION == -1) {
-		// 		pause();
-		// 	// continue;
-		// 	}
-		// 	else if (t != NULL && t->active_status) {
-		// 		// int status;
-		// 		// pid_t result = waitpid(-1, &status, WNOHANG);
-		// 		// if (result == -1) {
-		// 		// 	perror("waitpid: ");
-		// 		// 	// break;
-		// 		// }
-		// 		// else if (result == 0) {
-		// 			char buffer[128];
-		// 			int r = read(t->trader_fd, buffer, 128);
-		// 			if (r < 0) {
-		// 				perror("Failed to read: ");
-		// 				// t->active_status = 0;
-		// 				break;
-		// 			}
-		// 			if (TRADER_EXIT_STATUS == t->trader_pid) {
-		// 				// t->active_status = 0;
-		// 				index += 1;
-		// 				continue;
-		// 			}
-		// 			// printf("Trader exit status %d\n", TRADER_EXIT_STATUS);
-		// 			if (strlen(buffer) <= 0){
-		// 				// printf("No more to read\n");
-		// 				continue;
-		// 			}
-		// 			for (int i = 0; i < strlen(buffer); i++) {
-		// 				if (buffer[i] == ';') {
-		// 					buffer[i] = '\0';
-		// 					break;
-		// 				}
-		// 			}
-		// 	}
-		// } else if (index == num_of_traders) {
-		// 	int count = 0;
-		// 	for (int i = 0; i < num_of_traders; i++) {
-		// 		if (traders[i]->trader_pid == TRADER_EXIT_STATUS) {
-		// 				traders[i]->active_status = 0;
-		// 				printf("%s Trader %d disconnected\n", LOG_PREFIX, traders[i]->id);
-		// 		}
-		// 		if (traders[i]->active_status == 0) {
-		// 			count++;
-		// 		} 
-		// 	}
-		// 	if (count == num_of_traders) {
-		// 		break;
-		// 	}
-		// }
 	}
 	printf("%s Trading completed\n", LOG_PREFIX);
 	printf("%s Exchange fees collected: $%d\n", LOG_PREFIX, 0);
