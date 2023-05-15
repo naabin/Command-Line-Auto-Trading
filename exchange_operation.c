@@ -371,7 +371,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
         if ((strcmp(o->order_type, "SELL") == 0) || (o->trader_id == t->id)) {
             private_enqueue(dup_book, o);
         } else if (o->price > new_order->price) {
-            while (1) {
+            // while (1) {
                 if (o->quantity > new_order->quantity) {
                     int qty = o->quantity - new_order->quantity;
                     int value = qty * o->price;
@@ -420,7 +420,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                     cancel_order(book, o->order_id, o->trader, available_products);
                     break;
                 }
-            }
+            // }
         } 
         else {
             private_enqueue(dup_book, o);
