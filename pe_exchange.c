@@ -119,7 +119,6 @@ int main(int argc, char **argv)
 		int ret = epoll_wait(epoll_inst, events, MAX_CONNECTIONS, -1);
 		if (ret < -1) {
 			perror("Ret: ");
-			printf("%s did it come from here\n", LOG_PREFIX);
 			break;
 		}
 		for (int i = 0; i < ret; i++) {
@@ -241,7 +240,7 @@ int main(int argc, char **argv)
 					char *market_message = malloc(sizeof(char) * INPUT_LENGTH);
 					sprintf(market_message, "MARKET %s %s %d %d;", order_type, product_name, quantity, price);
 					for (int i = 0; i < num_of_traders; i++) {
-						if (traders[i]->id != t->id && t->active_status) {
+						if (traders[i]->id != t->id && traders[i]->active_status) {
 							write_to_trader(traders[i]->exchange_fd, market_message, strlen(market_message));
 							send_signal_to_trader(traders[i]->trader_pid);
 						}
