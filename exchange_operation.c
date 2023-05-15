@@ -583,7 +583,7 @@ void process_buy_order(struct order *new_order, struct order_book *book, struct 
                             if (o->num_of_orders == 1) {
                                 free(o->ids);
                             }
-                        } else if ((o->quantity - r_qty) == 0) {
+                        } else {
                             o->fulfilled = 1;
                             decrement_level(available_products, o);
                             break;
