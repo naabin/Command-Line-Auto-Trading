@@ -112,8 +112,6 @@ int main(int argc, char **argv)
 	
 	//Event loop
 	int connected = num_of_traders;
-	int current_trader_id = -1;
-	
 	while (1) {
 		// pause();
 		struct epoll_event events[MAX_CONNECTIONS];	
@@ -262,14 +260,15 @@ int main(int argc, char **argv)
 				for (int j = 0; j < num_of_traders; j++) {
 					if (pids[j] == t->trader_pid) {
 						connected--;
-						current_trader_id = t->id;
 						break;
 					}
 				}
 			}
 		}
 		if (connected == 0) {
-			printf("%s Trader %d disconnected\n", LOG_PREFIX, current_trader_id);
+			for (int i = 0; i < num_of_traders; i++) {
+				printf("%s Trader %d disconnected\n", LOG_PREFIX, traders[i]->id);
+			}
 			break;
 		}
 	}
