@@ -220,7 +220,9 @@ int main(int argc, char **argv)
 					//add order to the order book
 					struct order *new_order = enqueue_order(book, order_type, order_id, product_name, quantity, price, trader_id, t);
 					//incerement the level of the product
-					increment_level(exchanging_products, order_type, product_name);
+					if (new_order->num_of_orders == 1) {
+						increment_level(exchanging_products, order_type, product_name);
+					}
 					// send the accept message
 					char *accept_message = malloc(sizeof(char) * INPUT_LENGTH);
 					sprintf(accept_message, "ACCEPTED %d;", order_id);
@@ -229,7 +231,12 @@ int main(int argc, char **argv)
 					free(accept_message);
 					// broadcast the message to other traders
 					char *market_message = malloc(sizeof(char) * INPUT_LENGTH);
-					char *o_type = strcmp(BUY, order_type) == 0 ? "SELL ": "BUY ";
+					char *o_type = malloc(sizeof(char) * 10);
+					if (strcmp(BUY, order_type) == 0) {
+						sprintf(o_type, "SELL");
+					} else {
+						sprintf(o_type, "BUY");
+					}
 					sprintf(market_message, "MARKET %s %s %d %d;", o_type, product_name, quantity, price);
 					for (int i = 0; i < num_of_traders; i++) {
 						if (traders[i]->id != t->id) {
@@ -237,6 +244,7 @@ int main(int argc, char **argv)
 							send_signal_to_trader(traders[i]->trader_pid);
 						}
 					}
+					free(o_type);
 					free(market_message);
 					free(invalid_message);
 					// process the given order

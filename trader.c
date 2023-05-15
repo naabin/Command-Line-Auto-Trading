@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
         {
             perror("failed to read from trader pipe trader");
         }
-        // printf("%s\n", read_buf);
+        printf("%s\n", read_buf);
         // if (strcmp(type, "SELL") == 0) continue;
         // sprintf(write_buf, "%s", msg);
         if (index < num_of_orders) {
