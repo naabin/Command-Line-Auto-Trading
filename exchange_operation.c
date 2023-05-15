@@ -374,8 +374,14 @@ int get_traders_position_index(struct products *available_products, struct order
 }
 void log_match_order_to_stdout(char *order_type, struct order *o, struct order *new_order, int qty, int value, int fee, struct products *available_products) {
     int trader_pos = get_traders_position_index(available_products, o);
-    o->trader->position_qty[trader_pos] += qty;
-    o->trader->position_price[trader_pos] -= value;
+    if (strcmp(SELL, order_type) == 0) {
+        o->trader->position_qty[trader_pos] += qty;
+        o->trader->position_price[trader_pos] -= value;
+    }
+    if (strcmp(BUY, order_type) == 0) {
+        o->trader->position_qty[trader_pos] -= qty;
+        o->trader->position_price[trader_pos] += value;
+    }
     printf("%s Match: Order %d [T%d], New Order %d [T%d], value: $%d, fee: $%d.\n",
         LOG_PREFIX, o->order_id, o->trader_id, new_order->order_id, new_order->trader_id, value, fee);
     if (strcmp(order_type, SELL) == 0) {
@@ -383,7 +389,7 @@ void log_match_order_to_stdout(char *order_type, struct order *o, struct order *
         new_order->trader->position_price[trader_pos] += (value - fee);
     } else if (strcmp(order_type, BUY) == 0) {
         new_order->trader->position_qty[trader_pos] += qty;
-        new_order->trader->position_price[trader_pos] += (value + fee);
+        new_order->trader->position_price[trader_pos] -= (value + fee);
     }
     
     
