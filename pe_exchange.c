@@ -119,6 +119,7 @@ int main(int argc, char **argv)
 		int ret = epoll_wait(epoll_inst, events, MAX_CONNECTIONS, -1);
 		if (ret < -1) {
 			perror("Ret: ");
+			printf("%s did it come from here\n", LOG_PREFIX);
 			break;
 		}
 		for (int i = 0; i < ret; i++) {
