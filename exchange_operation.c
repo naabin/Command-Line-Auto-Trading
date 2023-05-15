@@ -191,8 +191,8 @@ int cancel_order(struct order_book *book, int order_id, struct trader* t, struct
                 if (id == order_id) {
                     // check if the trader owner matches with order
                     if (book->orders[i]->trader_id != t->id) {
-                        free(p_name);
                         free(order_type);
+                        free(p_name);
                         return 0;
                     }
                     strcpy(p_name, book->orders[i]->product_name);
@@ -204,8 +204,8 @@ int cancel_order(struct order_book *book, int order_id, struct trader* t, struct
         else if (book->orders[i]->order_id == order_id) {
             // check if the trader owner matches with order
             if (book->orders[i]->trader_id != t->id) {
-                free(p_name);
                 free(order_type);
+                free(p_name);
                 return 0;
             }
             index = i;
@@ -386,6 +386,7 @@ void log_match_order_to_stdout(char *order_type, struct order *o, struct order *
         o->trader->position_qty[trader_pos] -= qty;
         o->trader->position_price[trader_pos] += value;
     }
+    
     printf("%s Match: Order %d [T%d], New Order %d [T%d], value: $%d, fee: $%d.\n",
         LOG_PREFIX, o->order_id, o->trader_id, new_order->order_id, new_order->trader_id, value, fee);
     if (strcmp(order_type, SELL) == 0) {
@@ -403,6 +404,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
     struct products *available_products, write_fill fill_message, send_sig signal_traders, int *fees)
 {
     struct order_book *dup_book = create_orderbook(10);
+    int o_size = book->size;
     while (!is_empty(book)) {
         struct order *o = dequeue(book);
         if ((strcmp(o->order_type, "SELL") == 0) || (o->trader_id == t->id)) {
@@ -429,7 +431,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                     o->quantity = o->quantity - new_order->quantity;
                     // remove new order
                     new_order->fulfilled = 1;
-                    decrement_level(available_products, o);
+                    decrement_level(available_products, new_order);
                     // cancel_order(book, new_order->order_id, new_order->trader, available_products);
                     private_enqueue(dup_book, o);
                     break;
@@ -450,7 +452,6 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                             fill_message(new_order->trader->exchange_fd, new_order->trader_id, o->quantity);
                             signal_traders(o->trader->trader_pid);
                         }
-                        
                         //update the new order quantity
                         // update_order(book, new_order->order_id, r_qty, new_order->price, new_order->trader);
                         new_order->quantity = r_qty;
@@ -466,15 +467,15 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                             if (o->num_of_orders == 1) {
                                 free(o->ids);
                             }
-                            decrement_level(available_products, o);
                             // update_order(book, o->ids[0], o->quantity, o->price, o->trader);
                             
                         } else {
-                            o->fulfilled = 1;
-                            decrement_level(available_products, o);
+                            int current_book_size = book->size;
+                            book->size = o_size;
+                            cancel_order(book, o->order_id, o->trader, available_products);
+                            book->size = current_book_size;
                             break;
                         }
-                        
                     }
                 } else if (o->quantity == new_order->quantity) {
                     int value = o->quantity * o->price;
