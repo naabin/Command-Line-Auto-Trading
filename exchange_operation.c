@@ -392,10 +392,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                     // update_order(book, o->order_id, o->quantity - new_order->quantity, o->price, o->trader);
                     o->quantity = o->quantity - new_order->quantity;
                     // remove new order
-                    int current_book_size = book->size;
-                    book->size = o_size;
                     cancel_order(book, new_order->order_id, new_order->trader, available_products);
-                    book->size = current_book_size;
                     private_enqueue(dup_book, o);
                     break;
                 }
