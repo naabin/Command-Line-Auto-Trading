@@ -370,51 +370,53 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
         struct order *o = dequeue(book);
         if (strcmp(o->order_type, "SELL") || (o->trader_id == t->id)) {
             private_enqueue(dup_book, o);
-        } else if (o->price >= new_order->price) {
-            if (o->quantity > new_order->quantity) {
-                int qty = o->quantity - new_order->quantity;
-                int value = qty * o->price;
-                int fee = roundl(qty * (FEE_PERCENTAGE/100.0));
-                //update the existing order
-                update_order(book, o->order_id, qty, o->price, o->trader);
-                log_match_order_to_stdout(o, new_order, qty, value, fee, available_products);
-                //send fill order
-                fill_message(o->trader->exchange_fd, o->order_id, qty);
-                signal_traders(o->trader->trader_pid);
-                fill_message(new_order->trader->exchange_fd, new_order->trader_id, qty);
-                signal_traders(o->trader->trader_pid);
-                // remove new order
-                cancel_order(book, new_order->order_id, new_order->trader, available_products);
-                break;
-            }
-            else if (o->quantity < new_order->quantity) {
-                int r_qty = new_order->quantity - o->quantity;
-                int value = o->quantity * o->price;
-                int fee = roundl(value * (FEE_PERCENTAGE/100.0));
-                //update the new order
-                update_order(book, new_order->order_id, r_qty, new_order->price, new_order->trader);
-                log_match_order_to_stdout(o, new_order, r_qty, value, fee, available_products);
-                //send the fill order
-                fill_message(o->trader->exchange_fd, o->order_id, r_qty);
-                signal_traders(o->trader->trader_pid);
-                fill_message(new_order->trader->exchange_fd, new_order->trader_id, r_qty);
-                signal_traders(o->trader->trader_pid);
-                // remove the fulfilled order
-                cancel_order(book, o->order_id, o->trader, available_products);
-            } else if (o->quantity == new_order->quantity) {
-                int value = o->quantity * o->price;
-                int fee = roundl(value * (FEE_PERCENTAGE/100.0));
-                //stdout the match order
-                log_match_order_to_stdout(o, new_order, o->quantity, value, fee, available_products);
-                //send fill order
-                fill_message(o->trader->exchange_fd, o->order_id, o->quantity);
-                signal_traders(o->trader->trader_pid);
-                fill_message(new_order->trader->exchange_fd, new_order->trader_id, o->quantity);
-                signal_traders(o->trader->trader_pid);
-                // remove both order from the orderbook
-                cancel_order(book, new_order->order_id, new_order->trader, available_products);
-                cancel_order(book, o->order_id, o->trader, available_products);
-                break;
+        } else if (o->price > new_order->price) {
+            while (1) {
+                if (o->quantity > new_order->quantity) {
+                    int qty = o->quantity - new_order->quantity;
+                    int value = qty * o->price;
+                    int fee = roundl(qty * (FEE_PERCENTAGE/100.0));
+                    //update the existing order
+                    update_order(book, o->order_id, qty, o->price, o->trader);
+                    log_match_order_to_stdout(o, new_order, qty, value, fee, available_products);
+                    //send fill order
+                    fill_message(o->trader->exchange_fd, o->order_id, qty);
+                    signal_traders(o->trader->trader_pid);
+                    fill_message(new_order->trader->exchange_fd, new_order->trader_id, qty);
+                    signal_traders(o->trader->trader_pid);
+                    // remove new order
+                    cancel_order(book, new_order->order_id, new_order->trader, available_products);
+                    break;
+                }
+                else if (o->quantity < new_order->quantity) {
+                    int r_qty = new_order->quantity - o->quantity;
+                    int value = o->quantity * o->price;
+                    int fee = roundl(value * (FEE_PERCENTAGE/100.0));
+                    //update the new order
+                    update_order(book, new_order->order_id, r_qty, new_order->price, new_order->trader);
+                    log_match_order_to_stdout(o, new_order, r_qty, value, fee, available_products);
+                    //send the fill order
+                    fill_message(o->trader->exchange_fd, o->order_id, r_qty);
+                    signal_traders(o->trader->trader_pid);
+                    fill_message(new_order->trader->exchange_fd, new_order->trader_id, r_qty);
+                    signal_traders(o->trader->trader_pid);
+                    // remove the fulfilled order
+                    cancel_order(book, o->order_id, o->trader, available_products);
+                } else if (o->quantity == new_order->quantity) {
+                    int value = o->quantity * o->price;
+                    int fee = roundl(value * (FEE_PERCENTAGE/100.0));
+                    //stdout the match order
+                    log_match_order_to_stdout(o, new_order, o->quantity, value, fee, available_products);
+                    //send fill order
+                    fill_message(o->trader->exchange_fd, o->order_id, o->quantity);
+                    signal_traders(o->trader->trader_pid);
+                    fill_message(new_order->trader->exchange_fd, new_order->trader_id, o->quantity);
+                    signal_traders(o->trader->trader_pid);
+                    // remove both order from the orderbook
+                    cancel_order(book, new_order->order_id, new_order->trader, available_products);
+                    cancel_order(book, o->order_id, o->trader, available_products);
+                    break;
+                }
             }
         } else {
             private_enqueue(dup_book, o);

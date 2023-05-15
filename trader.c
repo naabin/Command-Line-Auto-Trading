@@ -46,26 +46,27 @@ int main(int argc, char *argv[])
         perror("failed to open trader fd");
     }
     // printf("%d %d\n", read_fd, write_fd);
-    int num_of_orders = 2;
-    // char *message[10] = {
-    //     "BUY 0 GPU 30 500;",
-    //     "BUY 1 Router 50 100;",
-    //     "AMMEND 0 31 499;",
-    //     "BUY 2 GPU 30 501;",
-    //     "BUY 3 GPU 30 501;",
-    //     "BUY 4 GPU 30 501;",
-    //     "CANCEL 2;",
-    //     "AMMEND 3 50 399",
-    //     "BUY 5 GPU 30 502;",
-    //     "SELL 6 Router 50 100;"
-    //     // "CANCEL 3;"
+    int num_of_orders = 10;
+    char *message[10] = {
+        "BUY 0 GPU 30 500;",
+        "BUY 1 Router 50 100;",
+        // "AMEND 0 31 499;",
+        "BUY",
+        "BUY 2 GPU 30 501;",
+        "BUY 3 GPU 30 501;",
+        "BUY 4 GPU 30 501;",
+        "CANCEL 2;",
+        "AMEND 3 50 399",
+        "BUY 5 GPU 30 502;",
+        "SELL 6 Router 50 100;"
+        // "CANCEL 3;"
         
-    //     // "CANCEL 0;"
-    // };
-    char *message[2] = {
-        "SELL 0 GPU 99 511;",
-        "SELL 1 GPU 99 402;"
+        // "CANCEL 0;"
     };
+    // char *message[2] = {
+    //     "SELL 0 GPU 99 511;",
+    //     "SELL 1 GPU 99 402;"
+    // };
     int index = 0;
     while (1)
     {
@@ -79,7 +80,7 @@ int main(int argc, char *argv[])
         {
             perror("failed to read from trader pipe trader");
         }
-        printf("%s\n", read_buf);
+        // printf("%s\n", read_buf);
         // if (strcmp(type, "SELL") == 0) continue;
         // sprintf(write_buf, "%s", msg);
         if (index < num_of_orders) {

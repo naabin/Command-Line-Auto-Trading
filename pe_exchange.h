@@ -7,7 +7,7 @@
 #define LOG_PREFIX "[PEX]"
 #define SELL "SELL"
 #define BUY "BUY"
-#define AMMEND "AMMEND"
+#define AMEND "AMEND"
 #define CANCEL "CANCEL"
 #define INVALID "INVALID"
 #define INPUT_LENGTH 128

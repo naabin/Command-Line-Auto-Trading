@@ -138,6 +138,7 @@ int main(int argc, char **argv)
 				char *invalid_message = malloc(sizeof(char)* INPUT_LENGTH);
 				sprintf(invalid_message, "INVALID;");
 				char * order_type = strtok(buffer, " ");
+				//TODO: handle error for all inputs with strtok
 				if (strcmp(CANCEL, order_type) == 0) {
 					//validate the id and process the cancel
 					int order_id = atoi(strtok(NULL, ";"));
@@ -158,7 +159,7 @@ int main(int argc, char **argv)
 						continue;
 					}
 
-				} else if (strcmp(AMMEND, order_type) == 0) {
+				} else if (strcmp(AMEND, order_type) == 0) {
 					// validate the id and ammend the order by given price and quantity
 					int order_id = atoi(strtok(NULL, " "));
 					int new_qty = atoi(strtok(NULL, " "));
@@ -181,7 +182,14 @@ int main(int argc, char **argv)
 					}
 				} else if (strcmp(BUY, order_type) == 0 || strcmp(SELL, order_type) == 0) {
 					// validate the id and product
-					int order_id = atoi(strtok(NULL, " "));
+					char *id = strtok(NULL, " ");
+					if (id == NULL) {
+						write_to_trader(t->exchange_fd, invalid_message, strlen(invalid_message));
+						send_signal_to_trader(t->trader_pid);
+						free(invalid_message);
+						continue;
+					}
+					int order_id = atoi(id);
 					if (order_id != t->current_order_id) {
 						// send invalid
 						write_to_trader(t->exchange_fd, invalid_message, strlen(invalid_message));
