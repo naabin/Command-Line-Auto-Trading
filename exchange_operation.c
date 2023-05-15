@@ -239,10 +239,10 @@ int cancel_order(struct order_book *book, int order_id, struct trader* t, struct
                 free(book->orders[index]->ids);
             }
         } else {
+            char *msg = malloc(sizeof(char) * 1024);
+            sprintf(msg, "MARKET %s %s %d %d;", book->orders[index]->order_type, book->orders[index]->product_name, book->orders[index]->order_id, 0);
             for (int i = 0; i < num_of_traders; i++) {
                 if (traders[i]->id != book->orders[index]->trader_id && traders[i]->active_status) {
-                    char *msg = malloc(sizeof(char) * 1024);
-                    sprintf(msg, "MARKET %s %s %d %d;", book->orders[index]->order_type, book->orders[index]->product_name, book->orders[index]->order_id, 0);
                     if (-1 == write(traders[i]->exchange_fd, msg, strlen(msg))) {
                         perror("write error broadcasting cancel: ");
                     }
@@ -251,6 +251,7 @@ int cancel_order(struct order_book *book, int order_id, struct trader* t, struct
                     }
                 }
             }
+            free(msg);
             free(book->orders[index]->product_name);
             free(book->orders[index]->order_type);
             if (book->orders[index]->num_of_orders > 1) {
@@ -484,6 +485,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                             o->fulfilled = 1;
                             o->quantity = 0;
                             decrement_level(available_products, o);
+                            private_enqueue(dup_book, o);
                             break;
                         }
                     }
@@ -507,6 +509,8 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                     new_order->fulfilled = 1;
                     decrement_level(available_products, o);
                     decrement_level(available_products, new_order);
+                    private_enqueue(dup_book, o);
+                    private_enqueue(dup_book, new_order);
                     // cancel_order(book, new_order->order_id, new_order->trader, available_products);
                     // cancel_order(book, o->order_id, o->trader, available_products);
                     break;
@@ -541,7 +545,7 @@ void process_buy_order(struct order *new_order, struct order_book *book, struct 
                         signal_traders(o->trader->trader_pid);
                     }
                     if (new_order->trader->active_status) {
-                        fill_message(new_order->trader->exchange_fd, new_order->trader_id, new_order->quantity);
+                        fill_message(new_order->trader->exchange_fd, new_order->order_id, new_order->quantity);
                         signal_traders(o->trader->trader_pid);
                     }
                     o->quantity = o->quantity - new_order->quantity;
