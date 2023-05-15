@@ -64,7 +64,7 @@ void write_fill_order(int fd, int order_id, int qty)
 {
     char *msg = malloc(sizeof(char) * INPUT_LENGTH);
     sprintf(msg, "FILL %d %d;", order_id, qty);
-    if (-1 == write(fd, msg, INPUT_LENGTH)) {
+    if (-1 == write(fd, msg, strlen(msg))) {
         perror("write error while filling: ");
     }
     sleep(0.2);

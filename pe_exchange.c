@@ -27,6 +27,8 @@ void sigchild_handler(int sig, siginfo_t *info, void*context) {
     sleep(0.1);
 }
 
+int TOTAL_FEES = 0;
+
 int main(int argc, char **argv)
 {
 	if (argc < 2)
@@ -249,7 +251,7 @@ int main(int argc, char **argv)
 					// process the given order
 					if (strcmp(order_type, SELL) == 0) {
 						process_sell_order
-						(new_order, book, t, exchanging_products, write_fill_order, send_signal_to_trader);
+						(new_order, book, t, exchanging_products, write_fill_order, send_signal_to_trader, TOTAL_FEES);
 					} else if (strcmp(order_type, BUY) == 0) {
 
 					}
@@ -281,7 +283,7 @@ int main(int argc, char **argv)
 		}
 	}
 	printf("%s Trading completed\n", LOG_PREFIX);
-	printf("%s Exchange fees collected: $%d\n", LOG_PREFIX, 0);
+	printf("%s Exchange fees collected: $%d\n", LOG_PREFIX, TOTAL_FEES);
 	for (int i = 0; i < num_of_traders; i++)
 	{
 		char e_fifo[20], t_fifo[20];
