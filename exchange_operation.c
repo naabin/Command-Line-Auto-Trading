@@ -375,7 +375,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
         struct order *o = dequeue(book);
         if ((strcmp(o->order_type, "SELL") == 0) || (o->trader_id == t->id)) {
             private_enqueue(dup_book, o);
-        } else if (o->price > new_order->price) {
+        } else if (o->price >= new_order->price) {
             // while (1) {
                 if (o->quantity > new_order->quantity) {
                     // int qty = o->quantity - new_order->quantity;
