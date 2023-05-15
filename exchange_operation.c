@@ -449,7 +449,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                     break;
                 }
                 else if (o->quantity < new_order->quantity) {
-                    while (o->num_of_orders >= 1) {
+                    while (o->num_of_orders >= 1 && o->quantity > 0) {
                         int r_qty = new_order->quantity - o->quantity;
                         int value = o->quantity * o->price;
                         int fee = roundl(value * (FEE_PERCENTAGE/100.0));
@@ -484,6 +484,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                         } else if (o->quantity - r_qty < 0) {
                             int current_book_size = book->size;
                             o->fulfilled = 1;
+                            o->quantity = 0;
                             decrement_level(available_products, o);
                             book->size = o_size;
                             book->size = current_book_size;
