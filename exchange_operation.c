@@ -63,7 +63,7 @@ struct order* enqueue_order(struct order_book *book, char * order_type, int orde
     o->ids_length = 0;
     strcpy(o->order_type, order_type);
     o->order_id = order_id;
-    o->product_name = malloc(sizeof(char) * (sizeof(product_name) + 1));
+    o->product_name = malloc(sizeof(char) * (strlen(product_name) + 1));
     strcpy(o->product_name, product_name);
     o->quantity = quantity;
     o->num_of_orders = 1;
@@ -148,9 +148,9 @@ void print_orderbook(struct order_book *book, struct products* available_product
             struct order *o = dequeue(book);
             if (strcmp(o->product_name, p_name) == 0) {
                 if (o->num_of_orders > 1) {
-                    printf("%s\t\t%s %s %d %d @ $%d (%d orders)\n",LOG_PREFIX, o->order_type, o->product_name, o->order_id, o->quantity * o->num_of_orders, o->price, o->num_of_orders);    
+                    printf("%s\t\t%s %d @ $%d (%d orders)\n",LOG_PREFIX, o->order_type, o->quantity * o->num_of_orders, o->price, o->num_of_orders);    
                 } else {
-                    printf("%s\t\t%s %s %d %d @ $%d (%d order)\n", LOG_PREFIX, o->order_type, o->product_name, o->order_id, o->quantity, o->price, o->num_of_orders);
+                    printf("%s\t\t%s %d @ $%d (%d order)\n", LOG_PREFIX, o->order_type, o->quantity, o->price, o->num_of_orders);
                 }
             }
         }
