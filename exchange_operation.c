@@ -372,14 +372,20 @@ int get_traders_position_index(struct products *available_products, struct order
     }
     return -1;
 }
-void log_match_order_to_stdout(struct order *o, struct order *new_order, int qty, int value, int fee, struct products *available_products) {
+void log_match_order_to_stdout(char *order_type, struct order *o, struct order *new_order, int qty, int value, int fee, struct products *available_products) {
     int trader_pos = get_traders_position_index(available_products, o);
     o->trader->position_qty[trader_pos] += qty;
     o->trader->position_price[trader_pos] -= value;
     printf("%s Match: Order %d [T%d], New Order %d [T%d], value: $%d, fee: $%d.\n",
         LOG_PREFIX, o->order_id, o->trader_id, new_order->order_id, new_order->trader_id, value, fee);
-    new_order->trader->position_qty[trader_pos] -= qty;
-    new_order->trader->position_price[trader_pos] += (value - fee);
+    if (strcmp(order_type, SELL) == 0) {
+        new_order->trader->position_qty[trader_pos] -= qty;
+        new_order->trader->position_price[trader_pos] += (value - fee);
+    } else if (strcmp(order_type, BUY) == 0) {
+        new_order->trader->position_qty[trader_pos] += qty;
+        new_order->trader->position_price[trader_pos] += (value + fee);
+    }
+    
     
 }
 
@@ -399,7 +405,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                     int value = new_order->quantity * o->price;
                     int fee = roundl(value * (FEE_PERCENTAGE * 0.01));
                     *fees += fee;
-                    log_match_order_to_stdout(o, new_order, new_order->quantity, value, fee, available_products);
+                    log_match_order_to_stdout(SELL, o, new_order, new_order->quantity, value, fee, available_products);
                     //send fill order
                     if (o->trader->active_status) {
                         fill_message(o->trader->exchange_fd, o->order_id, new_order->quantity);
@@ -425,7 +431,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                         int value = o->quantity * o->price;
                         int fee = roundl(value * (FEE_PERCENTAGE/100.0));
                         *fees += fee;
-                        log_match_order_to_stdout(o, new_order, o->quantity, value, fee, available_products);
+                        log_match_order_to_stdout(SELL, o, new_order, o->quantity, value, fee, available_products);
                         //send the fill order
                         if (o->trader->active_status) {
                             fill_message(o->trader->exchange_fd, o->order_id, o->quantity);
@@ -465,7 +471,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                     int fee = roundl(value * (FEE_PERCENTAGE/100.0));
                     *fees += fee;
                     //stdout the match order
-                    log_match_order_to_stdout(o, new_order, o->quantity, value, fee, available_products);
+                    log_match_order_to_stdout(SELL, o, new_order, o->quantity, value, fee, available_products);
                     //send fill order
                     if (o->trader->active_status) {
                         fill_message(o->trader->exchange_fd, o->order_id, o->quantity);
@@ -504,7 +510,7 @@ void process_buy_order(struct order *new_order, struct order_book *book, struct 
                     int value = new_order->quantity * o->price;
                     int fee = roundl(value * (FEE_PERCENTAGE * 0.01));
                     *fees += fee;
-                    log_match_order_to_stdout(o, new_order, new_order->quantity, value, fee, available_products);
+                    log_match_order_to_stdout(BUY, o, new_order, new_order->quantity, value, fee, available_products);
                     if (o->trader->active_status) {
                         fill_message(o->trader->exchange_fd, o->order_id, new_order->quantity);
                         signal_traders(o->trader->trader_pid);
@@ -523,14 +529,14 @@ void process_buy_order(struct order *new_order, struct order_book *book, struct 
                         int value = o->quantity * o->price;
                         int fee = roundl(value * (FEE_PERCENTAGE/100.0));
                         *fees += fee;
-                        log_match_order_to_stdout(o, new_order, o->quantity, value, fee, available_products);
+                        log_match_order_to_stdout(BUY, o, new_order, o->quantity, value, fee, available_products);
                         //send the fill order
                         if (o->trader->active_status) {
                             fill_message(o->trader->exchange_fd, o->order_id, o->quantity);
                             signal_traders(o->trader->trader_pid);
                         }
                         if (new_order->trader->active_status) {
-                            fill_message(new_order->trader->exchange_fd, new_order->trader_id, o->quantity);
+                            fill_message(new_order->trader->exchange_fd, new_order->order_id, o->quantity);
                             signal_traders(o->trader->trader_pid);
                         }
                         //update the new order quantity
@@ -558,7 +564,7 @@ void process_buy_order(struct order *new_order, struct order_book *book, struct 
                     int value = o->quantity * o->price;
                     int fee = roundl(value * (FEE_PERCENTAGE * 0.01));
                     *fees += fee;
-                    log_match_order_to_stdout(o, new_order, o->quantity, value, fee, available_products);
+                    log_match_order_to_stdout(BUY, o, new_order, o->quantity, value, fee, available_products);
                     if (o->trader->active_status) {
                         fill_message(o->trader->exchange_fd, o->order_id, o->quantity);
                         signal_traders(o->trader->trader_pid);
