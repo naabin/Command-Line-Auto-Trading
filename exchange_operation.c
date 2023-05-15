@@ -415,6 +415,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                             
                         } else {
                             cancel_order(book, o->order_id, o->trader, available_products);
+                            break;
                         }
                     }
                 } else if (o->quantity == new_order->quantity) {
