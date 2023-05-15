@@ -376,7 +376,6 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
         if ((strcmp(o->order_type, "SELL") == 0) || (o->trader_id == t->id)) {
             private_enqueue(dup_book, o);
         } else if (o->price >= new_order->price) {
-            // while (1) {
                 if (o->quantity > new_order->quantity) {
                     // int qty = o->quantity - new_order->quantity;
                     int value = new_order->quantity * o->price;
@@ -392,7 +391,10 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                     // update_order(book, o->order_id, o->quantity - new_order->quantity, o->price, o->trader);
                     o->quantity = o->quantity - new_order->quantity;
                     // remove new order
+                    int current_book_size = book->size;
+                    book->size = o_size;
                     cancel_order(book, new_order->order_id, new_order->trader, available_products);
+                    book->size = current_book_size;
                     private_enqueue(dup_book, o);
                     break;
                 }
@@ -449,7 +451,6 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                     cancel_order(book, o->order_id, o->trader, available_products);
                     break;
                 }
-            // }
         } 
         else {
             private_enqueue(dup_book, o);
