@@ -234,6 +234,9 @@ int cancel_order(struct order_book *book, int order_id, struct trader* t, struct
         } else {
             free(book->orders[index]->product_name);
             free(book->orders[index]->order_type);
+            if (book->orders[index]->num_of_orders > 1) {
+                free(book->orders[index]->ids);
+            }
             free(book->orders[index]);
             for (int i = index; i <= book->size-1; i++) {
                 book->orders[i] = book->orders[i + 1];
@@ -376,7 +379,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                 if (o->quantity > new_order->quantity) {
                     // int qty = o->quantity - new_order->quantity;
                     int value = new_order->quantity * o->price;
-                    int fee = round(new_order->quantity * (FEE_PERCENTAGE * 0.01));
+                    long fee = roundl(new_order->quantity * (FEE_PERCENTAGE * 0.01));
                     *fees += fee;
                     //update the existing order
                     log_match_order_to_stdout(o, new_order, new_order->quantity, value, fee, available_products);
@@ -385,8 +388,8 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                     signal_traders(o->trader->trader_pid);
                     fill_message(new_order->trader->exchange_fd, new_order->trader_id, new_order->quantity);
                     signal_traders(o->trader->trader_pid);
-                    update_order(book, o->order_id, o->quantity - new_order->quantity, o->price, o->trader);
-                    // o->quantity = o->quantity - new_order->quantity;
+                    // update_order(book, o->order_id, o->quantity - new_order->quantity, o->price, o->trader);
+                    o->quantity = o->quantity - new_order->quantity;
                     // remove new order
                     cancel_order(book, new_order->order_id, new_order->trader, available_products);
                     private_enqueue(dup_book, o);
@@ -416,6 +419,9 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                             o->num_of_orders--;
                             o->ids_length--;
                             o->order_id = o->ids[0];
+                            if (o->num_of_orders == 1) {
+                                free(o->ids);
+                            }
                             // update_order(book, o->ids[0], o->quantity, o->price, o->trader);
                             
                         } else {
