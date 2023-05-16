@@ -27,22 +27,7 @@ int insert_same_order(struct order **same_order, struct order *new_order)
         if (temp->next == NULL) break;
         curr += 1;
     }
-    temp->next = malloc(sizeof(struct order));
-    temp->next->order_type = malloc(sizeof(char) * (strlen(new_order->order_type) + 1));
-    temp->next->fulfilled = 0;
-    strcpy(temp->next->order_type, new_order->order_type);
-    temp->next->order_id = new_order->order_id;
-    temp->next->product_name = malloc(sizeof(char) * (strlen(new_order->product_name) + 1));
-    strcpy(temp->next->product_name, new_order->product_name);
-    temp->next->quantity = new_order->quantity;
-    temp->next->num_of_orders = 1;
-    temp->next->price = new_order->price;
-    temp->next->trader_id = new_order->trader_id;
-    temp->next->trader = new_order->trader;
-    temp->next->next = NULL;
-    free(new_order->product_name);
-    free(new_order->order_type);
-    free(new_order);
+    temp->next = new_order;
     return curr;
 }
 
@@ -441,7 +426,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                     while (current_order->next != NULL) {
                         process_order_for_sell(current_order, new_order, available_products, fees, fill_message, signal_traders);
                         new_order->quantity -= current_order->quantity;
-                        printf("%d\n", current_order->num_of_orders);
+                        printf("%d %d\n", current_order->num_of_orders, current_order->next->order_id);
                         struct order *temp = current_order;
                         current_order = current_order->next;
                         free(temp->product_name);
@@ -511,7 +496,7 @@ void process_buy_order(struct order *new_order, struct order_book *book, struct 
                     decrement_level(available_products, new_order);
                     break;
                 } else if (current_order->quantity < new_order->quantity) {
-                    if (current_order->num_of_orders > 1) {
+                    if (current_order->next != NULL) {
                         while (current_order->num_of_orders > 1) {
                             process_order_for_buy(current_order, new_order, available_products, fees, fill_message, signal_traders);
                             current_order->fulfilled = 1;
