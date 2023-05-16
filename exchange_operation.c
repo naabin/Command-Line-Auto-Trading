@@ -443,6 +443,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                         new_order->quantity -= current_order->quantity;
                         struct order *temp = current_order;
                         current_order = current_order->next;
+                        printf("current order id: %d qty: %d\n", current_order->order_id, current_order->quantity);
                         free(temp->product_name);
                         free(temp->order_type);
                         free(temp);
