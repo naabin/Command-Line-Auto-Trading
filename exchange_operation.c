@@ -394,7 +394,7 @@ void process_order_for_sell(struct order* current_order, struct order *new_order
     *fees += fee;
     log_match_order_to_stdout(SELL, current_order, new_order, qty, value, fee, available_products);
     if (current_order->trader->active_status) {
-            fill_message(current_order->trader->exchange_fd, current_order->order_id, current_order->quantity);
+            fill_message(current_order->trader->exchange_fd, qty, current_order->quantity);
             signal_traders(current_order->trader->trader_pid);
     }
     if (new_order->trader->active_status) {
@@ -415,8 +415,8 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
         }
         if (current_order->price >= new_order->price) {
             if (current_order->quantity > new_order->quantity) {
-                current_order->quantity = current_order->quantity - new_order->quantity;
                 process_order_for_sell(current_order, new_order, available_products, fees, fill_message, signal_traders);
+                current_order->quantity = current_order->quantity - new_order->quantity;
                 new_order->fulfilled = 1;
                 decrement_level(available_products, new_order);
                 private_enqueue(dup_book, new_order);
@@ -435,9 +435,9 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                         }
                         current_order->fulfilled = 1;
                         struct order *temp = current_order;
+                        private_enqueue(dup_book, temp);
                         current_order = current_order->next;
                         current_order->num_of_orders = temp->num_of_orders - 1;
-                        private_enqueue(dup_book, temp);
                         if (new_order->quantity <= 0)
                         {
                             new_order->fulfilled = 1;
@@ -448,9 +448,9 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                         }
                     }
                 } else {
+                    new_order->quantity = new_order->quantity - current_order->quantity;
                     process_order_for_sell(current_order, new_order, available_products, fees, fill_message, signal_traders);
                     current_order->fulfilled = 1;
-                    new_order->quantity = new_order->quantity - current_order->quantity;
                     private_enqueue(dup_book, current_order);
                     decrement_level(available_products, current_order);
                 }
