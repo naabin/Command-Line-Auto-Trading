@@ -406,7 +406,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
     struct order_book *dup_book = create_orderbook(10);
     while(!is_empty(book)) {
         struct order *current_order = dequeue(book);
-        if ((strcmp(current_order->order_type, "SELL") == 0) || (current_order->trader_id == t->id) || current_order->fulfilled) {
+        if ((strcmp(current_order->order_type, "SELL") == 0) || (current_order->trader_id == t->id)) {
             private_enqueue(dup_book, current_order);
             continue;
         }
