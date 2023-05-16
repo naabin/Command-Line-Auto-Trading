@@ -87,7 +87,6 @@ void sink(int k, struct order_book *book)
 struct order* dequeue(struct order_book* book)
 {
     struct order *temp = book->orders[1];
-    if (temp == NULL) return NULL;
     swap_orders(book, 1, book->size--);
     sink(1, book);
     return temp;
@@ -472,7 +471,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
         struct order * o = dequeue(dup_book);
         private_enqueue(book, o);
     }
-    free_orderbook(dup_book);
+    free(dup_book);
 }
 
 void process_order_for_buy(struct order* current_order, struct order* new_order, struct products* available_products, int *fees, write_fill fill_message, send_sig signal_traders)
@@ -540,6 +539,7 @@ void process_buy_order(struct order *new_order, struct order_book *book, struct 
 
 void free_orderbook(struct order_book* book)
 {
+
     while (!is_empty(book))
     {
         struct order *o = dequeue(book);
