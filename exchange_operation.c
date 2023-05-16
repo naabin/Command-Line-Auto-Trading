@@ -27,22 +27,7 @@ int insert_same_order(struct order **same_order, struct order *new_order)
         if (temp->next == NULL) break;
         curr += 1;
     }
-    temp->next = malloc(sizeof(struct order));
-    temp->next->order_type = malloc(sizeof(char) * (strlen(new_order->order_type) + 1));
-    temp->next->fulfilled = 0;
-    strcpy(temp->next->order_type, new_order->order_type);
-    temp->next->order_id = new_order->order_id;
-    temp->next->product_name = malloc(sizeof(char) * (strlen(new_order->product_name) + 1));
-    strcpy(temp->next->product_name, new_order->product_name);
-    temp->next->quantity = new_order->quantity;
-    temp->next->num_of_orders = 1;
-    temp->next->price = new_order->price;
-    temp->next->trader_id = new_order->trader_id;
-    temp->next->trader = new_order->trader;
-    temp->next->next = NULL;
-    free(new_order->product_name);
-    free(new_order->order_type);
-    free(new_order);
+    temp->next = new_order;
     return curr;
 }
 
@@ -409,11 +394,11 @@ void process_order_for_sell(struct order* current_order, struct order *new_order
     *fees += fee;
     log_match_order_to_stdout(SELL, current_order, new_order, qty, value, fee, available_products);
     if (current_order->trader->active_status) {
-            fill_message(current_order->trader->exchange_fd, current_order->order_id, qty);
+            fill_message(current_order->trader->exchange_fd, current_order->order_id, current_order->quantity);
             signal_traders(current_order->trader->trader_pid);
     }
     if (new_order->trader->active_status) {
-        fill_message(new_order->trader->exchange_fd, new_order->order_id, qty);
+        fill_message(new_order->trader->exchange_fd, new_order->order_id, current_order->quantity);
         signal_traders(current_order->trader->trader_pid);
     }
 }
@@ -424,14 +409,14 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
     struct order_book *dup_book = create_orderbook(10);
     while(!is_empty(book)) {
         struct order *current_order = dequeue(book);
-        if ((strcmp(current_order->order_type, "SELL") == 0) || (current_order->trader_id == t->id)) {
+        if ((strcmp(current_order->order_type, "SELL") == 0) || (current_order->trader_id == t->id) || current_order->fulfilled) {
             private_enqueue(dup_book, current_order);
             continue;
         }
         if (current_order->price >= new_order->price) {
             if (current_order->quantity > new_order->quantity) {
-                process_order_for_sell(current_order, new_order, available_products, fees, fill_message, signal_traders);
                 current_order->quantity = current_order->quantity - new_order->quantity;
+                process_order_for_sell(current_order, new_order, available_products, fees, fill_message, signal_traders);
                 new_order->fulfilled = 1;
                 decrement_level(available_products, new_order);
                 private_enqueue(dup_book, new_order);
@@ -439,21 +424,19 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                 break;
             } else if (current_order->quantity < new_order->quantity) {
                 if (current_order->num_of_orders > 1) {
-                    struct order *multi_order = current_order;
-                    while (multi_order != NULL) {
-                        process_order_for_sell(multi_order, new_order, available_products, fees, fill_message, signal_traders);
-                        new_order->quantity -= multi_order->quantity;
-                        if (multi_order->next == NULL) {
-                            multi_order->fulfilled = 1;
-                            decrement_level(available_products, multi_order);
-                            private_enqueue(dup_book, multi_order);
+                    while (current_order != NULL) {
+                        process_order_for_sell(current_order, new_order, available_products, fees, fill_message, signal_traders);
+                        new_order->quantity -= current_order->quantity;
+                        if (current_order->next == NULL) {
+                            current_order->fulfilled = 1;
+                            decrement_level(available_products, current_order);
+                            private_enqueue(dup_book, current_order);
                             break;
                         }
-                        multi_order->fulfilled = 1;
-                        struct order *temp = multi_order;
+                        current_order->fulfilled = 1;
+                        struct order *temp = detach_order_from_same_order(&current_order, current_order->order_id);
+                        current_order->num_of_orders = temp->num_of_orders - 1;
                         private_enqueue(dup_book, temp);
-                        multi_order = multi_order->next;
-                        multi_order->num_of_orders = temp->num_of_orders - 1;
                         if (new_order->quantity <= 0)
                         {
                             new_order->fulfilled = 1;
@@ -464,9 +447,9 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                         }
                     }
                 } else {
-                    new_order->quantity = new_order->quantity - current_order->quantity;
                     process_order_for_sell(current_order, new_order, available_products, fees, fill_message, signal_traders);
                     current_order->fulfilled = 1;
+                    new_order->quantity = new_order->quantity - current_order->quantity;
                     private_enqueue(dup_book, current_order);
                     decrement_level(available_products, current_order);
                 }
@@ -520,17 +503,16 @@ void process_buy_order(struct order *new_order, struct order_book *book, struct 
                     decrement_level(available_products, new_order);
                     break;
                 } else if (current_order->quantity < new_order->quantity) {
-                    if (current_order->num_of_orders > 1) {
-                        struct order *multi_order = current_order;
-                        while (multi_order != NULL) {
-                            process_order_for_buy(multi_order, new_order, available_products, fees, fill_message, signal_traders);
-                            multi_order->fulfilled = 1;
-                            new_order->quantity -= multi_order->quantity;
-                            if (multi_order->next == NULL) {
+                    if (current_order != NULL) {
+                        while (current_order->num_of_orders > 1) {
+                            process_order_for_buy(current_order, new_order, available_products, fees, fill_message, signal_traders);
+                            current_order->fulfilled = 1;
+                            new_order->quantity -= current_order->quantity;
+                            if (current_order->next == NULL) {
                                 break;
                             }
-                            struct order *temp = multi_order;
-                            multi_order = multi_order->next;
+                            struct order *temp = current_order;
+                            current_order = current_order->next;
                             free(temp->product_name);
                             free(temp->order_type);
                             free(temp);
@@ -554,14 +536,20 @@ void process_buy_order(struct order *new_order, struct order_book *book, struct 
 
 void free_orderbook(struct order_book* book)
 {
-
     while (!is_empty(book))
     {
         struct order *o = dequeue(book);
+        if (o == NULL) continue;
         if (o->next != NULL) {
             struct order *o1 = o->next;
             while (o1 != NULL) {
                 struct order *temp = o1;
+                if (o1->next == NULL) {
+                    free(o1->product_name);
+                    free(o1->order_type);
+                    free(o1);
+                    break;
+                }
                 o1 = o1->next;
                 free(temp->product_name);
                 free(temp->order_type);
