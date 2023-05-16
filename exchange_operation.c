@@ -431,6 +431,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                 break;
             } else if (current_order->quantity < new_order->quantity) {
                 if (current_order->num_of_orders > 1) {
+                    struct order *t = current_order;
                     for (struct order *same_order = current_order; same_order != NULL; same_order = same_order->next) {
                         process_order_for_sell(same_order, new_order, available_products, fees, fill_message, signal_traders);
                         new_order->quantity -= same_order->quantity;
@@ -449,6 +450,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                             break;
                         }
                     }
+                    current_order = t;
                 } else {
                     process_order_for_sell(current_order, new_order, available_products, fees, fill_message, signal_traders);
                     current_order->fulfilled = 1;
