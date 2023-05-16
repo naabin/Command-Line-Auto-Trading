@@ -37,7 +37,7 @@ struct order* detach_order_from_same_order(struct order **same_order, int deleti
     struct order *prev = NULL;
     int num_of_orders = (*same_order)->num_of_orders;
     if (temp != NULL && temp->order_id == deleting_order_id) {
-        *same_order = temp->next;
+        same_order = &(temp->next);
         temp->next->num_of_orders = num_of_orders - 1;
         return temp;
     }
@@ -424,19 +424,20 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                 break;
             } else if (current_order->quantity < new_order->quantity) {
                 if (current_order->num_of_orders > 1) {
-                    while (current_order->num_of_orders > 1) {
+                    while (current_order != NULL) {
                         process_order_for_sell(current_order, new_order, available_products, fees, fill_message, signal_traders);
                         new_order->quantity -= current_order->quantity;
                         current_order->num_of_orders -= 1;
-                        if (current_order->num_of_orders == 1) {
+                        if (current_order->next == NULL) {
                             current_order->fulfilled = 1;
                             decrement_level(available_products, current_order);
                             private_enqueue(dup_book, current_order);
                             break;
                         }
                         // current_order->fulfilled = 1;
-                        // struct order *temp = detach_order_from_same_order(&current_order, current_order->order_id);
-                        // private_enqueue(dup_book, temp);
+                        struct order *temp = detach_order_from_same_order(&current_order, current_order->order_id);
+                        temp->fulfilled = 1;
+                        private_enqueue(dup_book, temp);
                         if (new_order->quantity <= 0)
                         {
                             new_order->fulfilled = 1;
