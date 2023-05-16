@@ -434,6 +434,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                     for (struct order *same_order = current_order; same_order != NULL; same_order = same_order->next) {
                         process_order_for_sell(same_order, new_order, available_products, fees, fill_message, signal_traders);
                         new_order->quantity -= same_order->quantity;
+                        same_order->fulfilled = 1;
                         if (same_order->next == NULL) {
                             decrement_level(available_products, same_order);
                             private_enqueue(dup_book, current_order);
