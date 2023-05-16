@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
     }
     // printf("%d %d\n", read_fd, write_fd);
     int num_of_orders = 2;
-    // char *message[4] = {
+    // char *message[5] = {
     //     "BUY 0 GPU 30 500;",
     //     // "BUY 1 Router 50 100;",
     //     // "AMEND 0 31 499;",
@@ -55,6 +55,7 @@ int main(int argc, char *argv[])
     //     "BUY 1 GPU 30 501;",
     //     "BUY 2 GPU 30 501;",
     //     "BUY 3 GPU 30 502;",
+    //     "CANCEL 3;"
     //     // "SELL 4 GPU 30 503;",
     //     // "CANCEL 0;"
     //     // "BUY 4 GPU 30 501;",
@@ -87,7 +88,7 @@ int main(int argc, char *argv[])
         {
             perror("failed to read from trader pipe trader");
         }
-        sleep(5);
+        // sleep(5);
         printf("%s\n", read_buf);
         // if (strcmp(type, "SELL") == 0) continue;
         // sprintf(write_buf, "%s", msg);

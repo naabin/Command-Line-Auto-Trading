@@ -87,6 +87,7 @@ void sink(int k, struct order_book *book)
 struct order* dequeue(struct order_book* book)
 {
     struct order *temp = book->orders[1];
+    if (temp == NULL) return NULL;
     swap_orders(book, 1, book->size--);
     sink(1, book);
     return temp;
@@ -394,7 +395,7 @@ void process_order_for_sell(struct order* current_order, struct order *new_order
     *fees += fee;
     log_match_order_to_stdout(SELL, current_order, new_order, qty, value, fee, available_products);
     if (current_order->trader->active_status) {
-            fill_message(current_order->trader->exchange_fd, current_order->order_id, current_order->quantity);
+            fill_message(current_order->trader->exchange_fd, current_order->order_id, qty);
             signal_traders(current_order->trader->trader_pid);
     }
     if (new_order->trader->active_status) {
@@ -547,12 +548,6 @@ void free_orderbook(struct order_book* book)
             struct order *o1 = o->next;
             while (o1 != NULL) {
                 struct order *temp = o1;
-                if (o1->next == NULL) {
-                    free(o1->product_name);
-                    free(o1->order_type);
-                    free(o1);
-                    break;
-                }
                 o1 = o1->next;
                 free(temp->product_name);
                 free(temp->order_type);
