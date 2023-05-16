@@ -27,7 +27,22 @@ int insert_same_order(struct order **same_order, struct order *new_order)
         if (temp->next == NULL) break;
         curr += 1;
     }
-    temp->next = new_order;
+    temp->next = malloc(sizeof(struct order));
+    temp->next->order_type = malloc(sizeof(char) * (strlen(new_order->order_type) + 1));
+    temp->next->fulfilled = 0;
+    strcpy(temp->next->order_type, new_order->order_type);
+    temp->next->order_id = new_order->order_id;
+    temp->next->product_name = malloc(sizeof(char) * (strlen(new_order->product_name) + 1));
+    strcpy(temp->next->product_name, new_order->product_name);
+    temp->next->quantity = new_order->quantity;
+    temp->next->num_of_orders = 1;
+    temp->next->price = new_order->price;
+    temp->next->trader_id = new_order->trader_id;
+    temp->next->trader = new_order->trader;
+    temp->next->next = NULL;
+    free(new_order->product_name);
+    free(new_order->order_type);
+    free(new_order);
     return curr;
 }
 
@@ -543,17 +558,16 @@ void free_orderbook(struct order_book* book)
     while (!is_empty(book))
     {
         struct order *o = dequeue(book);
-        // printf("%d %s\n", o->order_id, o->product_name);
-        // if (o->next != NULL) {
-        //     struct order *o1 = o->next;
-        //     while (o1 != NULL) {
-        //         struct order *temp = o1;
-        //         o1 = o1->next;
-        //         free(temp->product_name);
-        //         free(temp->order_type);
-        //         free(temp);
-        //     }
-        // }
+        if (o->next != NULL) {
+            struct order *o1 = o->next;
+            while (o1 != NULL) {
+                struct order *temp = o1;
+                o1 = o1->next;
+                free(temp->product_name);
+                free(temp->order_type);
+                free(temp);
+            }
+        }
         free(o->product_name);
         free(o->order_type);
         free(o);
