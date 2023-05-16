@@ -431,13 +431,12 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                         if (current_order->num_of_orders == 1) {
                             current_order->fulfilled = 1;
                             decrement_level(available_products, current_order);
-                            // private_enqueue(dup_book, current_order);
+                            private_enqueue(dup_book, current_order);
                             break;
                         }
-                        current_order->fulfilled = 1;
-                        struct order *temp = detach_order_from_same_order(&current_order, current_order->order_id);
-                        current_order->num_of_orders = temp->num_of_orders - 1;
-                        private_enqueue(dup_book, temp);
+                        // current_order->fulfilled = 1;
+                        // struct order *temp = detach_order_from_same_order(&current_order, current_order->order_id);
+                        // private_enqueue(dup_book, temp);
                         if (new_order->quantity <= 0)
                         {
                             new_order->fulfilled = 1;
