@@ -438,20 +438,15 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                 break;
             } else if (current_order->quantity < new_order->quantity) {
                 if (current_order->num_of_orders > 1) {
-                    while (current_order->num_of_orders > 1) {
+                    while (current_order->next != NULL) {
                         process_order_for_sell(current_order, new_order, available_products, fees, fill_message, signal_traders);
                         new_order->quantity -= current_order->quantity;
+                        printf("%d\n", current_order->num_of_orders);
                         struct order *temp = current_order;
-                        int num_of_orders = current_order->num_of_orders - 1;
                         current_order = current_order->next;
-                        current_order->num_of_orders = num_of_orders;
-                        printf("%d %d\n", num_of_orders, current_order->num_of_orders);
                         free(temp->product_name);
                         free(temp->order_type);
                         free(temp);
-                        if (current_order->num_of_orders == 1) {
-
-                        }
                         if (new_order->quantity <= 0)
                         {
                             new_order->fulfilled = 1;
