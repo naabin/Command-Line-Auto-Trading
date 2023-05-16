@@ -35,9 +35,8 @@ struct order {
     int price;
     //Temporary solution to not show the fulfilled order
     int fulfilled;
-    int *ids;
-    int ids_length;
     struct trader *trader;
+    struct order *next;
 };
 
 struct order_book {
