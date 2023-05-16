@@ -543,17 +543,17 @@ void free_orderbook(struct order_book* book)
     while (!is_empty(book))
     {
         struct order *o = dequeue(book);
-        printf("%d %s\n", o->order_id, o->product_name);
-        if (o->next != NULL) {
-            struct order *o1 = o->next;
-            while (o1 != NULL) {
-                struct order *temp = o1;
-                o1 = o1->next;
-                free(temp->product_name);
-                free(temp->order_type);
-                free(temp);
-            }
-        }
+        // printf("%d %s\n", o->order_id, o->product_name);
+        // if (o->next != NULL) {
+        //     struct order *o1 = o->next;
+        //     while (o1 != NULL) {
+        //         struct order *temp = o1;
+        //         o1 = o1->next;
+        //         free(temp->product_name);
+        //         free(temp->order_type);
+        //         free(temp);
+        //     }
+        // }
         free(o->product_name);
         free(o->order_type);
         free(o);
