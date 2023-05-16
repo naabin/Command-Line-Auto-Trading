@@ -392,7 +392,7 @@ void process_order_for_sell(struct order* current_order, struct order *new_order
     int value = qty * current_order->price;
     int fee = roundl(value * (FEE_PERCENTAGE * 0.01));
     *fees += fee;
-    log_match_order_to_stdout(SELL, current_order, new_order, new_order->quantity, value, fee, available_products);
+    log_match_order_to_stdout(SELL, current_order, new_order, qty, value, fee, available_products);
     if (current_order->trader->active_status) {
             fill_message(current_order->trader->exchange_fd, current_order->order_id, current_order->quantity);
             signal_traders(current_order->trader->trader_pid);
@@ -432,6 +432,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                             private_enqueue(dup_book, current_order);
                             break;
                         }
+                        current_order->fulfilled = 1;
                         struct order *temp = current_order;
                         current_order = current_order->next;
                         current_order->num_of_orders = temp->num_of_orders - 1;
