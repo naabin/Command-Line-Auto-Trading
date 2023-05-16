@@ -423,12 +423,17 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                 break;
             } else if (current_order->quantity < new_order->quantity) {
                 if (current_order->num_of_orders > 1) {
-                    while (current_order->next != NULL) {
+                    while (current_order != NULL) {
                         process_order_for_sell(current_order, new_order, available_products, fees, fill_message, signal_traders);
                         new_order->quantity -= current_order->quantity;
-                        printf("%d %d\n", current_order->num_of_orders, current_order->next->order_id);
+                        if (current_order->next == NULL) {
+                            current_order->fulfilled = 1;
+                            private_enqueue(dup_book, current_order);
+                            break;
+                        }
                         struct order *temp = current_order;
                         current_order = current_order->next;
+                        current_order->num_of_orders = temp->num_of_orders - 1;
                         free(temp->product_name);
                         free(temp->order_type);
                         free(temp);
@@ -496,11 +501,14 @@ void process_buy_order(struct order *new_order, struct order_book *book, struct 
                     decrement_level(available_products, new_order);
                     break;
                 } else if (current_order->quantity < new_order->quantity) {
-                    if (current_order->next != NULL) {
+                    if (current_order != NULL) {
                         while (current_order->num_of_orders > 1) {
                             process_order_for_buy(current_order, new_order, available_products, fees, fill_message, signal_traders);
                             current_order->fulfilled = 1;
                             new_order->quantity -= current_order->quantity;
+                            if (current_order->next == NULL) {
+                                break;
+                            }
                             struct order *temp = current_order;
                             current_order = current_order->next;
                             free(temp->product_name);
