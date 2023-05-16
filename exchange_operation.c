@@ -37,12 +37,14 @@ struct order* detach_order_from_same_order(struct order **same_order, int deleti
     struct order *prev = NULL;
     int num_of_orders = (*same_order)->num_of_orders;
     if (temp != NULL && temp->order_id == deleting_order_id) {
-        same_order = &(temp->next);
+        printf("detaching..\n");
+        *same_order = temp->next;
         temp->next->num_of_orders = num_of_orders - 1;
         if (return_head){
             free(temp->order_type);
             free(temp->product_name);
             free(temp);
+            printf("%d\n", (*same_order)->order_id);
             return *same_order;
         } 
         return temp;
@@ -441,6 +443,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                             break;
                         }
                         current_order = detach_order_from_same_order(&current_order, current_order->order_id, 1);
+                        printf("next order id: %d\n", current_order->order_id);
                         if (new_order->quantity <= 0)
                         {
                             new_order->fulfilled = 1;
