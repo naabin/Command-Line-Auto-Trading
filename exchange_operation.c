@@ -14,20 +14,35 @@ struct order_book* create_orderbook(int order_size)
     return book;
 }
 
-int insert_same_order(struct order *same_order, struct order *new_order) 
+int insert_same_order(struct order **same_order, struct order *new_order) 
 {
-    if ((same_order) == NULL) {
-        same_order = new_order;
+    if (*(same_order) == NULL) {
+        *same_order = new_order;
         return 1;
     }
-    struct order *temp = same_order;
+    struct order *temp = *same_order;
     int curr = 1;
     while (temp->next != NULL) {
         temp = temp->next;
         if (temp->next == NULL) break;
         curr += 1;
     }
-    temp->next = new_order;
+    temp->next = malloc(sizeof(struct order));
+    temp->next->order_type = malloc(sizeof(char) * (strlen(new_order->order_type) + 1));
+    temp->next->fulfilled = 0;
+    strcpy(temp->next->order_type, new_order->order_type);
+    temp->next->order_id = new_order->order_id;
+    temp->next->product_name = malloc(sizeof(char) * (strlen(new_order->product_name) + 1));
+    strcpy(temp->next->product_name, new_order->product_name);
+    temp->next->quantity = new_order->quantity;
+    temp->next->num_of_orders = 1;
+    temp->next->price = new_order->price;
+    temp->next->trader_id = new_order->trader_id;
+    temp->next->trader = new_order->trader;
+    temp->next->next = NULL;
+    free(new_order->product_name);
+    free(new_order->order_type);
+    free(new_order);
     return curr;
 }
 
@@ -120,20 +135,20 @@ struct order* enqueue_order(struct order_book *book, char * order_type, int orde
     else
     {
         int found = 0;
-        int found_index = -1;
+        struct order *same_order = NULL;
         for (int i = 1; i <= book->size; i++) {
             struct order *o1 = book->orders[i];
             if (o->price == o1->price && strcmp(o->product_name, o1->product_name) == 0 && (o->quantity == o1->quantity)
              && (strcmp(o->order_type, o1->order_type) == 0)) {
-                found_index = i;
+                same_order = o1;
                 found = 1;
             }    
         }
         if (found)
         {
-            int num_of_orders = insert_same_order(book->orders[found_index], o);
-            book->orders[found_index]->num_of_orders = num_of_orders + 1;
-            return book->orders[found_index];
+            int num_of_orders = insert_same_order(&same_order, o);
+            same_order->num_of_orders = num_of_orders + 1;
+            return same_order;
         } 
         else {
             book->orders[++book->size] = o;
@@ -406,7 +421,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
     struct order_book *dup_book = create_orderbook(10);
     while(!is_empty(book)) {
         struct order *current_order = dequeue(book);
-        if ((strcmp(current_order->order_type, "SELL") == 0) || (current_order->trader_id == t->id)) {
+        if ((strcmp(current_order->order_type, "SELL") == 0) || (current_order->trader_id == t->id) || current_order->fulfilled) {
             private_enqueue(dup_book, current_order);
             continue;
         }
