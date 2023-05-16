@@ -403,7 +403,7 @@ void log_match_order_to_stdout(char *order_type, struct order *o, struct order *
     
 }
 void process_order_for_sell(struct order* current_order, struct order *new_order, struct products *available_products, int *fees, write_fill fill_message, send_sig signal_traders) {
-    int value = new_order->quantity * current_order->price;
+    int value = current_order->quantity * current_order->price;
     int fee = roundl(value * (FEE_PERCENTAGE * 0.01));
     *fees += fee;
     log_match_order_to_stdout(SELL, current_order, new_order, new_order->quantity, value, fee, available_products);
@@ -453,7 +453,6 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                             private_enqueue(dup_book, current_order);
                             break;
                         }
-                         
                     }
                 } else {
                     process_order_for_sell(current_order, new_order, available_products, fees, fill_message, signal_traders);
