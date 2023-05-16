@@ -388,7 +388,8 @@ void log_match_order_to_stdout(char *order_type, struct order *o, struct order *
     
 }
 void process_order_for_sell(struct order* current_order, struct order *new_order, struct products *available_products, int *fees, write_fill fill_message, send_sig signal_traders) {
-    int value = current_order->quantity * current_order->price;
+    int qty = new_order->quantity < current_order->quantity ? new_order->quantity: current_order->quantity;
+    int value = qty * current_order->price;
     int fee = roundl(value * (FEE_PERCENTAGE * 0.01));
     *fees += fee;
     log_match_order_to_stdout(SELL, current_order, new_order, new_order->quantity, value, fee, available_products);
@@ -414,8 +415,8 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
         }
         if (current_order->price >= new_order->price) {
             if (current_order->quantity > new_order->quantity) {
-                process_order_for_sell(current_order, new_order, available_products, fees, fill_message, signal_traders);
                 current_order->quantity = current_order->quantity - new_order->quantity;
+                process_order_for_sell(current_order, new_order, available_products, fees, fill_message, signal_traders);
                 new_order->fulfilled = 1;
                 decrement_level(available_products, new_order);
                 private_enqueue(dup_book, new_order);
@@ -434,9 +435,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                         struct order *temp = current_order;
                         current_order = current_order->next;
                         current_order->num_of_orders = temp->num_of_orders - 1;
-                        free(temp->product_name);
-                        free(temp->order_type);
-                        free(temp);
+                        private_enqueue(dup_book, temp);
                         if (new_order->quantity <= 0)
                         {
                             new_order->fulfilled = 1;
