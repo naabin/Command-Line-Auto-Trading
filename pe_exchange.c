@@ -54,6 +54,7 @@ int main(int argc, char **argv)
 	if (argc <= 2) {
 		free(traders);
 		free_products(exchanging_products);
+		free_orderbook(book);
 		exit(EXIT_FAILURE);
 	}
 	int ex_fds[MAX_CONNECTIONS];

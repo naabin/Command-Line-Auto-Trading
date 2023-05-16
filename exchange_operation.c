@@ -31,7 +31,7 @@ int insert_same_order(struct order **same_order, struct order *new_order)
     return curr;
 }
 
-struct order* delete_order_from_same_order(struct order **same_order, int deleting_order_id)
+struct order* detach_order_from_same_order(struct order **same_order, int deleting_order_id)
 {
     struct order *temp = *same_order;
     struct order *prev = NULL;
@@ -211,7 +211,7 @@ int cancel_order(struct order_book *book, int order_id, struct trader* t, struct
                     if (o->trader->id != t->id) {
                         return 0;  
                     }
-                    deleting_order = delete_order_from_same_order(&book->orders[i], o->order_id);
+                    deleting_order = detach_order_from_same_order(&book->orders[i], o->order_id);
                     found = 1;
                     break;
                 }
@@ -281,7 +281,7 @@ int update_order(struct order_book* book, int order_id, int new_quanity, int new
                     }
                     //same order
                     if ((o->quantity == new_quanity) && (o->price == new_price)) return 1;
-                    struct order *diff_order = delete_order_from_same_order(&book->orders[i], o->order_id);
+                    struct order *diff_order = detach_order_from_same_order(&book->orders[i], o->order_id);
                     enqueue_order(book, diff_order->order_type, order_id, diff_order->product_name, new_quanity, new_price, diff_order->trader_id, diff_order->trader);
                     free(diff_order->product_name);
                     free(diff_order->order_type);
@@ -409,7 +409,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
     struct order_book *dup_book = create_orderbook(10);
     while(!is_empty(book)) {
         struct order *current_order = dequeue(book);
-        if ((strcmp(current_order->order_type, "SELL") == 0) || (current_order->trader_id == t->id) || current_order->fulfilled) {
+        if ((strcmp(current_order->order_type, "SELL") == 0) || (current_order->trader_id == t->id)) {
             private_enqueue(dup_book, current_order);
             continue;
         }
@@ -471,7 +471,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
         struct order * o = dequeue(dup_book);
         private_enqueue(book, o);
     }
-    free(dup_book);
+    free_orderbook(dup_book);
 }
 
 void process_order_for_buy(struct order* current_order, struct order* new_order, struct products* available_products, int *fees, write_fill fill_message, send_sig signal_traders)
@@ -543,7 +543,7 @@ void free_orderbook(struct order_book* book)
     while (!is_empty(book))
     {
         struct order *o = dequeue(book);
-        if (o == NULL) continue;
+        printf("%d %s\n", o->order_id, o->product_name);
         if (o->next != NULL) {
             struct order *o1 = o->next;
             while (o1 != NULL) {
