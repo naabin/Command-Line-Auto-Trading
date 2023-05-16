@@ -146,15 +146,12 @@ int main(int argc, char **argv)
 				char *invalid_message = malloc(sizeof(char)* INPUT_LENGTH);
 				sprintf(invalid_message, "INVALID;");
 				char * order_type = strtok(buffer, " ");
-				printf("%s\n", order_type);
 				if (order_type == NULL) {
 					send_invalid_message_to_current_trader(t, invalid_message);
 					continue;
 				}
-				//TODO: handle error for all inputs with strtok
 				if (strcmp(CANCEL, order_type) == 0) {
 					//validate the id and process the cancel
-					printf("does it come here\n");
 					char *id = strtok(NULL, ";");
 					if (id == NULL) {
 						printf("does it come here and ?\n");
