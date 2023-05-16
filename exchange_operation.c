@@ -424,10 +424,11 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                 break;
             } else if (current_order->quantity < new_order->quantity) {
                 if (current_order->num_of_orders > 1) {
-                    while (current_order != NULL) {
+                    while (current_order->num_of_orders > 1) {
                         process_order_for_sell(current_order, new_order, available_products, fees, fill_message, signal_traders);
                         new_order->quantity -= current_order->quantity;
-                        if (current_order->next == NULL) {
+                        current_order->num_of_orders -= 1;
+                        if (current_order->num_of_orders == 1) {
                             current_order->fulfilled = 1;
                             decrement_level(available_products, current_order);
                             // private_enqueue(dup_book, current_order);
