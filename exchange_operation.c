@@ -469,6 +469,8 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                 private_enqueue(dup_book, current_order);
                 break;
             }
+        } else {
+            private_enqueue(dup_book, current_order);
         }
     }
     while(!is_empty(dup_book)) {

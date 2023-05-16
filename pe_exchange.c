@@ -150,11 +150,11 @@ int main(int argc, char **argv)
 					send_invalid_message_to_current_trader(t, invalid_message);
 					continue;
 				}
+				//TODO: handle error for all inputs with strtok
 				if (strcmp(CANCEL, order_type) == 0) {
 					//validate the id and process the cancel
 					char *id = strtok(NULL, ";");
 					if (id == NULL) {
-						// printf("does it come here and ?\n");
 						send_invalid_message_to_current_trader(t, invalid_message);
 						continue;
 					}
@@ -196,7 +196,7 @@ int main(int argc, char **argv)
 					int updated = update_order(book, order_id, new_qty, new_price, t);
 					if (updated) {
 						char* msg = malloc(sizeof(char) * INPUT_LENGTH);
-						sprintf(msg, "AMENDED %d;", order_id);
+						sprintf(msg, "UPDATED %d;", order_id);
 						write_to_trader(t->exchange_fd, msg, strlen(msg));
 						send_signal_to_trader(t->trader_pid);
 						free(invalid_message);
@@ -281,8 +281,8 @@ int main(int argc, char **argv)
 					free(invalid_message);
 					// process the given order
 					if (strcmp(order_type, SELL) == 0) {
-						// process_sell_order
-						// (new_order, book, t, exchanging_products, write_fill_order, send_signal_to_trader, &TOTAL_FEES);
+						process_sell_order
+						(new_order, book, t, exchanging_products, write_fill_order, send_signal_to_trader, &TOTAL_FEES);
 					} else if (strcmp(order_type, BUY) == 0) {
 						// printf("%s buy order processing\n", LOG_PREFIX);
 						process_buy_order(new_order, book, t, exchanging_products, write_fill_order, send_signal_to_trader, &TOTAL_FEES);
