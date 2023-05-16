@@ -154,7 +154,7 @@ int main(int argc, char **argv)
 					//validate the id and process the cancel
 					char *id = strtok(NULL, ";");
 					if (id == NULL) {
-						printf("does it come here and ?\n");
+						// printf("does it come here and ?\n");
 						send_invalid_message_to_current_trader(t, invalid_message);
 						continue;
 					}

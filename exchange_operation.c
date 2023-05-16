@@ -133,6 +133,7 @@ struct order* enqueue_order(struct order_book *book, char * order_type, int orde
         {
             int num_of_orders = insert_same_order(&same_order, o);
             same_order->num_of_orders = num_of_orders + 1;
+            return same_order;
         } 
         else {
             book->orders[++book->size] = o;
@@ -251,11 +252,11 @@ int cancel_order(struct order_book *book, int order_id, struct trader* t, struct
             }
         }
         if (delete_index) {
-            printf("%d\n", delete_index);
+            // printf("%d\n", delete_index);
             for (int i = delete_index; i < book->size; i++) {
                 book->orders[i] = book->orders[i + 1];
             }
-            
+            book->size--;
         }
         free(deleting_order->product_name);
         free(deleting_order->order_type);
