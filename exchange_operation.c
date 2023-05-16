@@ -14,13 +14,13 @@ struct order_book* create_orderbook(int order_size)
     return book;
 }
 
-int insert_same_order(struct order **same_order, struct order *new_order) 
+int insert_same_order(struct order *same_order, struct order *new_order) 
 {
-    if (*(same_order) == NULL) {
-        *same_order = new_order;
+    if ((same_order) == NULL) {
+        same_order = new_order;
         return 1;
     }
-    struct order *temp = *same_order;
+    struct order *temp = same_order;
     int curr = 1;
     while (temp->next != NULL) {
         temp = temp->next;
@@ -131,7 +131,7 @@ struct order* enqueue_order(struct order_book *book, char * order_type, int orde
         }
         if (found)
         {
-            int num_of_orders = insert_same_order(&book->orders[found_index], o);
+            int num_of_orders = insert_same_order(book->orders[found_index], o);
             book->orders[found_index]->num_of_orders = num_of_orders + 1;
             return book->orders[found_index];
         } 
