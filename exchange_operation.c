@@ -146,8 +146,11 @@ struct order* enqueue_order(struct order_book *book, char * order_type, int orde
         }
         if (found)
         {
-            int num_of_orders = insert_same_order(&same_order, o);
-            same_order->num_of_orders = num_of_orders + 1;
+            // int num_of_orders = insert_same_order(&same_order, o);
+            // same_order->num_of_orders = num_of_orders + 1;
+            free(o->order_type);
+            free(o->product_name);
+            free(o);
             return same_order;
         } 
         else {
