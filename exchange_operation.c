@@ -33,12 +33,13 @@ int insert_same_order(struct order **same_order, struct order *new_order)
 
 struct order* detach_order_from_same_order(struct order **same_order, int deleting_order_id, int return_head)
 {
-    struct order *temp = *same_order;
     struct order *prev = NULL;
+    struct order *temp = *same_order;
     int num_of_orders = (*same_order)->num_of_orders;
     if (temp != NULL && temp->order_id == deleting_order_id) {
         printf("detaching..\n");
-        *same_order = temp->next;
+        struct order *t = *same_order;
+        *same_order = (*same_order)->next;
         temp->next->num_of_orders = num_of_orders - 1;
         if (return_head){
             free(temp->order_type);
@@ -47,7 +48,7 @@ struct order* detach_order_from_same_order(struct order **same_order, int deleti
             printf("%d\n", (*same_order)->order_id);
             return *same_order;
         } 
-        return temp;
+        return t;
     }
     while (temp != NULL && temp->order_id != deleting_order_id) {
         prev = temp;

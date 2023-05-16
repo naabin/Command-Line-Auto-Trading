@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
         "BUY 1 GPU 30 501;",
         "BUY 2 GPU 30 501;",
         "BUY 3 GPU 30 502;",
-        "CANCEL 3;"
+        "CANCEL 0;"
         // "SELL 4 GPU 30 503;",
         // "CANCEL 0;"
         // "BUY 4 GPU 30 501;",
