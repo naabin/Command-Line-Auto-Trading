@@ -430,7 +430,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                         if (current_order->next == NULL) {
                             current_order->fulfilled = 1;
                             decrement_level(available_products, current_order);
-                            private_enqueue(dup_book, current_order);
+                            // private_enqueue(dup_book, current_order);
                             break;
                         }
                         current_order->fulfilled = 1;
