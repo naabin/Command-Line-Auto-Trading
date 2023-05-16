@@ -135,25 +135,22 @@ struct order* enqueue_order(struct order_book *book, char * order_type, int orde
     else
     {
         int found = 0;
-        int found_index = -1;
-        // struct order *same_order = NULL;
+        // int found_index = -1;
+        struct order *same_order = NULL;
         for (int i = 1; i <= book->size; i++) {
             struct order *o1 = book->orders[i];
             if (o->price == o1->price && strcmp(o->product_name, o1->product_name) == 0 && (o->quantity == o1->quantity)
              && (strcmp(o->order_type, o1->order_type) == 0)) {
-                // same_order = o1;
-                found_index = i;
+                same_order = o1;
+                // found_index = i;
                 found = 1;
             }    
         }
         if (found)
         {
-            // int num_of_orders = insert_same_order(&same_order, o);
-            // same_order->num_of_orders = num_of_orders + 1;
-            free(o->order_type);
-            free(o->product_name);
-            free(o);
-            return book->orders[found_index];
+            int num_of_orders = insert_same_order(&same_order, o);
+            same_order->num_of_orders = num_of_orders + 1;
+            return same_order;
         } 
         else {
             book->orders[++book->size] = o;
