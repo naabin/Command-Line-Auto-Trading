@@ -33,10 +33,11 @@ struct order {
     int num_of_orders;
     int quantity;
     int price;
-    //Temporary solution to not show the fulfilled order
+    //Temporary solution to not show the fulfilled order to stdout
     int fulfilled;
     struct trader *trader;
-    struct order *next;
+    // struct order *next;
+    struct order **same_orders;
 };
 
 struct order_book {
