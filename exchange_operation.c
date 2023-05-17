@@ -422,11 +422,11 @@ void process_order_for_sell(struct order* current_order, struct order *new_order
     *fees += fee;
     log_match_order_to_stdout(SELL, current_order, new_order, qty, value, fee, available_products);
     if (current_order->trader->active_status) {
-            fill_message(current_order->trader->exchange_fd, current_order->order_id, current_order->quantity);
+            fill_message(current_order->trader->exchange_fd, current_order->order_id, qty);
             signal_traders(current_order->trader->trader_pid);
     }
     if (new_order->trader->active_status) {
-        fill_message(new_order->trader->exchange_fd, new_order->order_id, current_order->quantity);
+        fill_message(new_order->trader->exchange_fd, new_order->order_id, qty);
         signal_traders(current_order->trader->trader_pid);
     }
 }
@@ -452,6 +452,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                 break;
             } else if (current_order->quantity < new_order->quantity) {
                 if (current_order->num_of_orders > 1) {
+                    int num_of_orders = current_order->num_of_orders;
                     for (int i = 0; i < current_order->num_of_orders; i++) {
                         struct order *same_order = current_order->same_orders[i];
                         process_order_for_sell(same_order, new_order, available_products, fees, fill_message, signal_traders);
@@ -469,8 +470,10 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                         decrement_level(available_products, same_order);
                         same_order->fulfilled = 1;
                         new_order->quantity -= same_order->quantity;
-
+                        num_of_orders--;
                     }
+                    current_order->num_of_orders = num_of_orders;
+                    private_enqueue(dup_book, current_order);
                     // for (struct order *same_order = current_order; same_order != NULL; same_order = same_order->next) {
                     //     process_order_for_sell(same_order, new_order, available_products, fees, fill_message, signal_traders);
                     //     new_order->quantity -= same_order->quantity;
