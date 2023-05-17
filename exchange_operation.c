@@ -84,7 +84,7 @@ struct order* delete_same_order(struct order **order, int order_id, int trader_i
         struct order *temp = *order;
         if ((*order)->num_of_orders == 2) {
             (*order) = (*order)->same_orders[0];
-            (*order)->num_of_orders--;
+            (*order)->num_of_orders = temp->num_of_orders - 1;
             free(temp->same_orders);
             temp->same_orders = NULL;
             return temp;
