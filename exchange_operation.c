@@ -456,7 +456,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                                 free(same_order->order_type);
                                 free(same_order->product_name);
                                 free(same_order);
-                                for (int i = 1; i <= book->size; i++) {
+                                for (int i = 1; i <= o_size; i++) {
                                     printf("%d %d\n", book->orders[i]->order_id, book->orders[i]->price);
                                 }
                             }
