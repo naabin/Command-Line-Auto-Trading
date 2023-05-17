@@ -399,17 +399,17 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
 {
     int o_size = book->size;
     while (book->size >= 1) {
+        if (new_order->fulfilled) {
+            printf("does it come here\n");
+            decrement_level(available_products, new_order);
+            break;
+        }
         struct order * max_buy_order = dequeue(book);
         if ((strcmp(max_buy_order->order_type, "SELL") == 0) || (max_buy_order->trader_id == t->id) || max_buy_order->fulfilled) {
             continue;
         }
         if (new_order->price > max_buy_order->price) break;
         //This will exit the loop after filling orders
-        if (new_order->fulfilled) {
-            printf("does it come here\n");
-            decrement_level(available_products, new_order);
-            break;
-        }
         if (max_buy_order->quantity > new_order->quantity) {
             max_buy_order->quantity = max_buy_order->quantity - new_order->quantity;
             process_order_for_sell(max_buy_order, new_order, available_products, fees, fill_message, signal_traders);
@@ -449,6 +449,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                                 max_buy_order->fulfilled = 1;
                                 o_size -= 1;
                                 swim(o_size, book);
+                                private_enqueue(book, max_buy_order);
                                 // free(max_buy_order->order_type);
                                 // free(max_buy_order->product_name);
                                 // free(max_buy_order);
