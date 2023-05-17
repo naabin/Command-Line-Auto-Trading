@@ -58,18 +58,6 @@ void insert_same_order(struct order *order, struct order *new_order)
 {
     if (order->num_of_orders == 1 || order->same_orders == NULL) {
         order->same_orders = (struct order**)calloc(1, sizeof(struct order*));
-        // struct order *head = malloc(sizeof(struct order));
-        // head->order_id = order->order_id;
-        // head->product_name = malloc(sizeof(char) * strlen(order->product_name) + 1);
-        // strcpy(head->product_name, order->product_name);
-        // head->order_type = malloc(sizeof(char) * strlen(order->order_type) + 1);
-        // strcpy(head->order_type, order->order_type);
-        // head->num_of_orders = 1;
-        // head->quantity = order->quantity;
-        // head->price = order->price;
-        // head->trader_id = order->trader_id;
-        // head->trader = order->trader;
-        // head->fulfilled = order->fulfilled;
         order->same_orders[0] = new_order;
         order->num_of_orders++;
     } else {
@@ -446,18 +434,18 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                             }
                         }
                         if (current_order->num_of_orders == 1) {
-                            printf("third if\n");
+                            // printf("third if\n");
                             current_order->fulfilled = 1;
                             new_order->quantity -= current_order->quantity;
                             private_enqueue(dup_book, current_order);
-                            decrement_level(available_products, current_order);
                             break;
                         }
                         new_order->quantity -= current_order->quantity;
                         struct order *filled_order = delete_same_order(&current_order, current_order->order_id, current_order->trader_id);
-                        free(filled_order->product_name);
-                        free(filled_order->order_type);
-                        free(filled_order);
+                        private_enqueue(dup_book, filled_order);
+                        // free(filled_order->product_name);
+                        // free(filled_order->order_type);
+                        // free(filled_order);
                     }
                     decrement_level(available_products, current_order);
                 } else {
