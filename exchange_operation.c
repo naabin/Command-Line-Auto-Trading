@@ -448,6 +448,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                         if (current_order->num_of_orders == 1) {
                             printf("third if\n");
                             current_order->fulfilled = 1;
+                            new_order->quantity -= current_order->quantity;
                             private_enqueue(dup_book, current_order);
                             decrement_level(available_products, current_order);
                             break;
