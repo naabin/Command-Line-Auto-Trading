@@ -404,7 +404,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
             continue;
         }
         if (current_order->price > new_order->price) {
-            if (current_order->quantity > new_order->quantity) {
+            if (current_order->quantity >= new_order->quantity) {
                 current_order->quantity = current_order->quantity - new_order->quantity;
                 process_order_for_sell(current_order, new_order, available_products, fees, fill_message, signal_traders);
                 new_order->fulfilled = 1;
@@ -465,6 +465,11 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                 break;
             }
         } else {
+            if (current_order->num_of_orders > 1) {
+                for (int i = 0; i < current_order->num_of_orders - 1; i++) {
+                    private_enqueue(dup_book, current_order->same_orders[i]);
+                }
+            }
             private_enqueue(dup_book, current_order);
         }
     }
