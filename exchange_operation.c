@@ -403,7 +403,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
             private_enqueue(dup_book, current_order);
             continue;
         }
-        if (current_order->price >= new_order->price) {
+        if (current_order->price > new_order->price) {
             if (current_order->quantity > new_order->quantity) {
                 current_order->quantity = current_order->quantity - new_order->quantity;
                 process_order_for_sell(current_order, new_order, available_products, fees, fill_message, signal_traders);
