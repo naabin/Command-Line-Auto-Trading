@@ -457,22 +457,26 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                         struct order *same_order = current_order->same_orders[i];
                         process_order_for_sell(same_order, new_order, available_products, fees, fill_message, signal_traders);
                         //lookout for partially filled order
-                        if (new_order->quantity < same_order->quantity) {
+                        if (new_order->quantity <= 0) {
+                            new_order->fulfilled = 1;
+                            break;
+                        }
+                        if (new_order->quantity < same_order->quantity && new_order->quantity > 0) {
                             if (!same_order->fulfilled && same_order->quantity > 0) {
-                                struct order *partially_filled_order = delete_same_order(same_order, same_order->order_id, 1);
-                                partially_filled_order->quantity -= new_order->quantity;
+                                same_order->quantity -= new_order->quantity;
                                 process_order_for_sell(same_order, new_order, available_products, fees, fill_message, signal_traders);
-                                private_enqueue(dup_book, partially_filled_order);
+                                enqueue_order(book, same_order->order_type, same_order->order_id, same_order->product_name, same_order->quantity,
+                                same_order->price, same_order->trader_id, same_order->trader);
                                 new_order->fulfilled = 1;
                                 break;
                             }
                         }
-                        decrement_level(available_products, same_order);
                         same_order->fulfilled = 1;
                         new_order->quantity -= same_order->quantity;
                         num_of_orders--;
                     }
                     current_order->num_of_orders = num_of_orders;
+                    decrement_level(available_products, current_order);
                     private_enqueue(dup_book, current_order);
                     // for (struct order *same_order = current_order; same_order != NULL; same_order = same_order->next) {
                     //     process_order_for_sell(same_order, new_order, available_products, fees, fill_message, signal_traders);
