@@ -397,10 +397,10 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
     struct products *available_products, write_fill fill_message, send_sig signal_traders, int *fees)
 {
     int o_size = book->size;
-    while (1) {
+    while (book->size > 1) {
         struct order * max_buy_order = dequeue(book);
         if ((strcmp(max_buy_order->order_type, "SELL") == 0) || (max_buy_order->trader_id == t->id)) {
-            break;
+            continue;
         }
         if (new_order->price > max_buy_order->price) break;
         //This will exit the loop after filling orders
