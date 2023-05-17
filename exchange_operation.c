@@ -443,10 +443,8 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                         new_order->quantity -= current_order->quantity;
                         struct order *filled_order = delete_same_order(&current_order, current_order->order_id, current_order->trader_id);
                         filled_order->fulfilled = 1;
+                        filled_order->same_orders = NULL;
                         private_enqueue(dup_book, filled_order);
-                        // free(filled_order->product_name);
-                        // free(filled_order->order_type);
-                        // free(filled_order);
                     }
                     decrement_level(available_products, current_order);
                 } else {
@@ -472,7 +470,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
     }
     while(!is_empty(dup_book)) {
         struct order * o = dequeue(dup_book);
-        enqueue_order(book, o->order_type, o->order_id, o->product_name, o->quantity, o->price, o->trader_id, o->trader);
+        private_enqueue(book, o);
     }
     free_orderbook(dup_book);
 }
@@ -559,7 +557,7 @@ void free_orderbook(struct order_book* book)
     while (!is_empty(book))
     {
         struct order *o = dequeue(book);
-        if (o->num_of_orders > 1) {
+        if ((o->num_of_orders > 1) && (o->same_orders != NULL)) {
             for (int i = 0; i < o->num_of_orders - 1; i++) {
                 struct order *s_order = o->same_orders[i];
                 free(s_order->product_name);
