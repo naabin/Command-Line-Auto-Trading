@@ -435,6 +435,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                         }
                         if (max_buy_order->num_of_orders == 1) {
                             new_order->quantity -= max_buy_order->quantity;
+                            decrement_level(available_products, max_buy_order);
                             int index = 0;
                             for (int i = 1; i <= o_size; i++) {
                                 if (book->orders[i]->order_id == max_buy_order->order_id) {
@@ -464,7 +465,6 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                         free(filled_order->product_name);
                         free(filled_order);
                     }
-                    decrement_level(available_products, max_buy_order);
                 } else {
                     process_order_for_sell(max_buy_order, new_order, available_products, fees, fill_message, signal_traders);
                     new_order->quantity -= max_buy_order->quantity;
