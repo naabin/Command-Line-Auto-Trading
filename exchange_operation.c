@@ -396,91 +396,63 @@ void process_order_for_sell(struct order* current_order, struct order *new_order
 void process_sell_order(struct order *new_order, struct order_book *book, struct trader *t, 
     struct products *available_products, write_fill fill_message, send_sig signal_traders, int *fees)
 {
-    struct order_book *dup_book = create_orderbook(10);
-    while(!is_empty(book)) {
-        struct order *current_order = dequeue(book);
-        if ((strcmp(current_order->order_type, "SELL") == 0) || (current_order->trader_id == t->id) || current_order->fulfilled) {
-            private_enqueue(dup_book, current_order);
-            continue;
+    int o_size = book->size;
+    while (1) {
+        struct order * max_buy_order = dequeue(book);
+        if ((strcmp(max_buy_order->order_type, "SELL") == 0) || (max_buy_order->trader_id == t->id)) {
+            break;
         }
-        if (current_order->price > new_order->price) {
-            if (current_order->quantity >= new_order->quantity) {
-                current_order->quantity = current_order->quantity - new_order->quantity;
-                process_order_for_sell(current_order, new_order, available_products, fees, fill_message, signal_traders);
-                new_order->fulfilled = 1;
-                decrement_level(available_products, new_order);
-                private_enqueue(dup_book, new_order);
-                private_enqueue(dup_book, current_order);
-                break;
-            } else if (current_order->quantity < new_order->quantity) {
-                if (current_order->num_of_orders > 1) {
-                    while(current_order->num_of_orders >= 1) {
-                        process_order_for_sell(current_order, new_order, available_products, fees, fill_message, signal_traders);
+        if (new_order->price > max_buy_order->price) break;
+        //This will exit the loop after filling orders
+        if (new_order->fulfilled) {
+            decrement_level(available_products, new_order);
+            break;
+        }
+        if (max_buy_order->quantity > new_order->quantity) {
+            max_buy_order->quantity = max_buy_order->quantity - new_order->quantity;
+            process_order_for_sell(max_buy_order, new_order, available_products, fees, fill_message, signal_traders);
+            new_order->fulfilled = 1;
+        }
+        else if (max_buy_order->quantity < new_order->quantity) {
+                if (max_buy_order->num_of_orders > 1) {
+                    while(max_buy_order->num_of_orders >= 1) {
                         if (new_order->quantity <= 0) {
-                            printf("first if\n");
-                            decrement_level(available_products, new_order);
                             new_order->fulfilled = 1;
                             break;
                         }
+                        process_order_for_sell(max_buy_order, new_order, available_products, fees, fill_message, signal_traders);
                         //lookout for partially filled order
-                        if (new_order->quantity < current_order->quantity && new_order->quantity > 0) {
-                            printf("second if\n");
-                            if (!current_order->fulfilled && current_order->quantity > 0) {
-                                current_order->quantity -= new_order->quantity;
-                                process_order_for_sell(current_order, new_order, available_products, fees, fill_message, signal_traders);
-                                private_enqueue(dup_book, current_order);
+                        if (new_order->quantity < max_buy_order->quantity && new_order->quantity > 0) {
+                            // printf("second if\n");
+                            if (!max_buy_order->fulfilled && max_buy_order->quantity > 0) {
+                                max_buy_order->quantity -= new_order->quantity;
+                                process_order_for_sell(max_buy_order, new_order, available_products, fees, fill_message, signal_traders);
                                 new_order->fulfilled = 1;
                                 break;
                             }
                         }
-                        if (current_order->num_of_orders == 1) {
+                        if (max_buy_order->num_of_orders == 1) {
                             // printf("third if\n");
-                            current_order->fulfilled = 1;
-                            new_order->quantity -= current_order->quantity;
-                            private_enqueue(dup_book, current_order);
+                            max_buy_order->fulfilled = 1;
+                            new_order->quantity -= max_buy_order->quantity;
                             break;
                         }
-                        new_order->quantity -= current_order->quantity;
-                        struct order *filled_order = delete_same_order(&current_order, current_order->order_id, current_order->trader_id);
+                        new_order->quantity -= max_buy_order->quantity;
+                        struct order *filled_order = delete_same_order(&max_buy_order, max_buy_order->order_id, max_buy_order->trader_id);
                         filled_order->fulfilled = 1;
                         filled_order->same_orders = NULL;
-                        private_enqueue(dup_book, filled_order);
                     }
-                    decrement_level(available_products, current_order);
-                } else {
-                    process_order_for_sell(current_order, new_order, available_products, fees, fill_message, signal_traders);
-                    current_order->fulfilled = 1;
-                    new_order->quantity = new_order->quantity - current_order->quantity;
-                    private_enqueue(dup_book, current_order);
-                    decrement_level(available_products, current_order);
+                    decrement_level(available_products, max_buy_order);
                 }
-            } else if (current_order->quantity == new_order->quantity) {
-                process_order_for_sell(current_order, new_order, available_products, fees, fill_message, signal_traders);
-                current_order->fulfilled = 1;
-                new_order->fulfilled = 1;
-                decrement_level(available_products, current_order);
-                decrement_level(available_products, new_order);
-                private_enqueue(dup_book, new_order);
-                private_enqueue(dup_book, current_order);
-                break;
-            }
         } else {
-            if (current_order->num_of_orders > 1) {
-                for (int i = 0; i < current_order->num_of_orders - 1; i++) {
-                    private_enqueue(dup_book, current_order->same_orders[i]);
-                }
-            }
-            private_enqueue(dup_book, current_order);
+            process_order_for_sell(max_buy_order, new_order, available_products, fees, fill_message, signal_traders);
+            max_buy_order->fulfilled = 1;
+            new_order->fulfilled = 1;
+            decrement_level(available_products, max_buy_order);
         }
     }
-    while(!is_empty(dup_book)) {
-        struct order * o = dequeue(dup_book);
-        enqueue_order(book, o->order_type, o->order_id, o->product_name, o->quantity, o->price, o->trader_id, o->trader);
-        free(o->product_name);
-        free(o->order_type);
-        free(o);
-    }
-    free_orderbook(dup_book);
+    book->size = o_size;
+    swim(book->size, book);
 }
 
 void process_order_for_buy(struct order* current_order, struct order* new_order, struct products* available_products, int *fees, write_fill fill_message, send_sig signal_traders)
