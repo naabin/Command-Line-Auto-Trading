@@ -429,23 +429,24 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                     while(current_order->num_of_orders >= 1) {
                         process_order_for_sell(current_order, new_order, available_products, fees, fill_message, signal_traders);
                         if (new_order->quantity <= 0) {
+                            printf("first if\n");
                             decrement_level(available_products, new_order);
                             new_order->fulfilled = 1;
                             break;
                         }
                         //lookout for partially filled order
                         if (new_order->quantity < current_order->quantity && new_order->quantity > 0) {
+                            printf("second if\n");
                             if (!current_order->fulfilled && current_order->quantity > 0) {
                                 current_order->quantity -= new_order->quantity;
                                 process_order_for_sell(current_order, new_order, available_products, fees, fill_message, signal_traders);
                                 private_enqueue(dup_book, current_order);
-                                // enqueue_order(book, current_order->order_type, current_order->order_id, current_order->product_name, current_order->quantity,
-                                // current_order->price, current_order->trader_id, current_order->trader);
                                 new_order->fulfilled = 1;
                                 break;
                             }
                         }
                         if (current_order->num_of_orders == 1) {
+                            printf("third if\n");
                             current_order->fulfilled = 1;
                             private_enqueue(dup_book, current_order);
                             decrement_level(available_products, current_order);
