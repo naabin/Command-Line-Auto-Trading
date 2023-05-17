@@ -479,7 +479,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
         }
     }
     book->size = o_size;
-    swim(book->size, book);
+    swim(o_size, book);
 }
 
 void process_order_for_buy(struct order* current_order, struct order* new_order, struct products* available_products, int *fees, write_fill fill_message, send_sig signal_traders)
