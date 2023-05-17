@@ -80,6 +80,7 @@ struct order* delete_same_order(struct order **order, int order_id, int trader_i
         for (int i = 0; i < temp->num_of_orders - 1; i++) {
             (*order)->same_orders[i] = (*order)->same_orders[i + 1];
         }
+        (*order) = (*order)->same_orders[0];
         (*order)->num_of_orders = temp->num_of_orders - 1;
         (*order)->same_orders = realloc((*order)->same_orders, (*order)->num_of_orders);
         return temp;
@@ -399,7 +400,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
     int o_size = book->size;
     while (book->size >= 1) {
         struct order * max_buy_order = dequeue(book);
-        if ((strcmp(max_buy_order->order_type, "SELL") == 0) || (max_buy_order->trader_id == t->id)) {
+        if ((strcmp(max_buy_order->order_type, "SELL") == 0) || (max_buy_order->trader_id == t->id) || max_buy_order->fulfilled) {
             continue;
         }
         if (new_order->price > max_buy_order->price) break;
@@ -433,12 +434,32 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                             }
                         }
                         if (max_buy_order->num_of_orders == 1) {
-                            max_buy_order->fulfilled = 1;
                             new_order->quantity -= max_buy_order->quantity;
+                            int index = 0;
+                            for (int i = 1; i <= o_size; i++) {
+                                if (book->orders[i]->order_id == max_buy_order->order_id) {
+                                    index = i;
+                                }
+                            }
+                            if (index) {
+                                for (int i = index; i < o_size; i++) {
+                                    book->orders[i] = book->orders[i + 1];
+                                }
+                                o_size -= 1;
+                                swim(o_size, book);
+                                free(max_buy_order->order_type);
+                                free(max_buy_order->product_name);
+                                free(max_buy_order);
+                            }
                             break;
                         }
                         new_order->quantity -= max_buy_order->quantity;
                         struct order *filled_order = delete_same_order(&max_buy_order, max_buy_order->order_id, max_buy_order->trader_id);
+                        for (int i = 1; i <= o_size; i++) {
+                            if (book->orders[i]->order_id == filled_order->order_id) {
+                                book->orders[i] = max_buy_order;
+                            }
+                        }
                         free(filled_order->order_type);
                         free(filled_order->product_name);
                         free(filled_order);
