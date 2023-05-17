@@ -397,7 +397,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
     struct products *available_products, write_fill fill_message, send_sig signal_traders, int *fees)
 {
     int o_size = book->size;
-    while (book->size > 1) {
+    while (book->size >= 1) {
         struct order * max_buy_order = dequeue(book);
         if ((strcmp(max_buy_order->order_type, "SELL") == 0) || (max_buy_order->trader_id == t->id)) {
             continue;
@@ -442,6 +442,11 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                         filled_order->fulfilled = 1;
                         filled_order->same_orders = NULL;
                     }
+                    decrement_level(available_products, max_buy_order);
+                } else {
+                    process_order_for_sell(max_buy_order, new_order, available_products, fees, fill_message, signal_traders);
+                    new_order->quantity -= max_buy_order->quantity;
+                    max_buy_order->fulfilled = 1;
                     decrement_level(available_products, max_buy_order);
                 }
         } else {
