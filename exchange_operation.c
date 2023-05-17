@@ -559,7 +559,7 @@ void free_orderbook(struct order_book* book)
     while (!is_empty(book))
     {
         struct order *o = dequeue(book);
-        if (o->num_of_orders > 1 && o->same_orders != NULL) {
+        if (o->num_of_orders > 1) {
             for (int i = 0; i < o->num_of_orders - 1; i++) {
                 struct order *s_order = o->same_orders[i];
                 free(s_order->product_name);
