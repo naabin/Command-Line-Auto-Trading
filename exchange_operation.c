@@ -470,7 +470,10 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
     }
     while(!is_empty(dup_book)) {
         struct order * o = dequeue(dup_book);
-        private_enqueue(book, o);
+        enqueue_order(book, o->order_type, o->order_id, o->product_name, o->quantity, o->price, o->trader_id, o->trader);
+        free(o->product_name);
+        free(o->order_type);
+        free(o);
     }
     free_orderbook(dup_book);
 }
