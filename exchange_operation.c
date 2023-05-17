@@ -488,28 +488,8 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                         new_order->quantity -= same_order->quantity;
                         num_of_orders--;
                     }
-                    current_order->num_of_orders = num_of_orders;
                     decrement_level(available_products, current_order);
-                    private_enqueue(dup_book, current_order);
-                    // for (struct order *same_order = current_order; same_order != NULL; same_order = same_order->next) {
-                    //     process_order_for_sell(same_order, new_order, available_products, fees, fill_message, signal_traders);
-                    //     new_order->quantity -= same_order->quantity;
-                    //     same_order->fulfilled = 1;
-                    //     if (same_order->next == NULL) {
-                    //         // printf("does it come here\n");
-                    //         decrement_level(available_products, same_order);
-                    //         // private_enqueue(dup_book, same_order);
-                    //         break;
-                    //     }
-                    //     if (new_order->quantity <= 0)
-                    //     {
-                    //         new_order->fulfilled = 1;
-                    //         decrement_level(available_products, new_order);
-                    //         private_enqueue(dup_book, new_order);
-                    //         private_enqueue(dup_book, current_order);
-                    //         break;
-                    //     }
-                    // }
+                    current_order->num_of_orders = num_of_orders;
                 } else {
                     process_order_for_sell(current_order, new_order, available_products, fees, fill_message, signal_traders);
                     current_order->fulfilled = 1;
