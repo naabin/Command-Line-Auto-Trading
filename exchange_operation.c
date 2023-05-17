@@ -451,6 +451,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                                 }
                                 same_order->fulfilled = 1;
                                 o_size -= 1;
+                                book->orders = realloc(book->orders, o_size);
                                 swim(o_size, book);
                                 // private_enqueue(book, same_order);
                                 free(same_order->order_type);
