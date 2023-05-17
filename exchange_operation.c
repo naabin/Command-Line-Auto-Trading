@@ -425,7 +425,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                         process_order_for_sell(max_buy_order, new_order, available_products, fees, fill_message, signal_traders);
                         //lookout for partially filled order
                         if (new_order->quantity < max_buy_order->quantity && new_order->quantity > 0) {
-                            printf("second if\n");
+                            // printf("second if\n");
                             if (!max_buy_order->fulfilled && max_buy_order->quantity > 0) {
                                 max_buy_order->quantity -= new_order->quantity;
                                 process_order_for_sell(max_buy_order, new_order, available_products, fees, fill_message, signal_traders);
