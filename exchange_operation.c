@@ -58,7 +58,19 @@ void insert_same_order(struct order *order, struct order *new_order)
 {
     if (order->num_of_orders == 1) {
         order->same_orders = (struct order**)calloc(1, sizeof(struct order*) * 2);
-        order->same_orders[0] = order;
+        struct order *head = malloc(sizeof(struct order));
+        head->order_id = order->order_id;
+        head->product_name = malloc(sizeof(char) * strlen(order->product_name) + 1);
+        strcpy(head->product_name, order->product_name);
+        head->order_type = malloc(sizeof(char) * strlen(order->order_type) + 1);
+        strcpy(head->order_type, order->order_type);
+        head->num_of_orders = 1;
+        head->quantity = order->quantity;
+        head->price = order->price;
+        head->trader_id = order->trader_id;
+        head->trader = order->trader;
+        head->fulfilled = order->fulfilled;
+        order->same_orders[0] = head;
         order->same_orders[1] = new_order;
         order->num_of_orders++;
     } else {
@@ -458,6 +470,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                         process_order_for_sell(same_order, new_order, available_products, fees, fill_message, signal_traders);
                         //lookout for partially filled order
                         if (new_order->quantity <= 0) {
+                            decrement_level(available_products, new_order);
                             new_order->fulfilled = 1;
                             break;
                         }
@@ -617,7 +630,7 @@ void free_orderbook(struct order_book* book)
     {
         struct order *o = dequeue(book);
         if (o->num_of_orders > 1) {
-            for (int i = 1; i < o->num_of_orders; i++) {
+            for (int i = 0; i < o->num_of_orders; i++) {
                 struct order *s_order = o->same_orders[i];
                 free(s_order->product_name);
                 free(s_order->order_type);
