@@ -414,31 +414,34 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
             max_buy_order->quantity = max_buy_order->quantity - new_order->quantity;
             process_order_for_sell(max_buy_order, new_order, available_products, fees, fill_message, signal_traders);
             new_order->fulfilled = 1;
+            decrement_level(available_products, new_order);
+            break;
         }
         else if (max_buy_order->quantity < new_order->quantity) {
                 if (max_buy_order->num_of_orders > 1) {
-                    while(max_buy_order->num_of_orders >= 1) {
+                    struct order *same_order = max_buy_order;
+                    while(same_order->num_of_orders >= 1) {
                         if (new_order->quantity <= 0) {
                             new_order->fulfilled = 1;
                             break;
                         }
-                        process_order_for_sell(max_buy_order, new_order, available_products, fees, fill_message, signal_traders);
+                        process_order_for_sell(same_order, new_order, available_products, fees, fill_message, signal_traders);
                         //lookout for partially filled order
-                        if (new_order->quantity < max_buy_order->quantity && new_order->quantity > 0) {
+                        if (new_order->quantity < same_order->quantity && new_order->quantity > 0) {
                             // printf("second if\n");
-                            if (!max_buy_order->fulfilled && max_buy_order->quantity > 0) {
-                                max_buy_order->quantity -= new_order->quantity;
-                                process_order_for_sell(max_buy_order, new_order, available_products, fees, fill_message, signal_traders);
+                            if (!same_order->fulfilled && same_order->quantity > 0) {
+                                same_order->quantity -= new_order->quantity;
+                                process_order_for_sell(same_order, new_order, available_products, fees, fill_message, signal_traders);
                                 new_order->fulfilled = 1;
                                 break;
                             }
                         }
-                        if (max_buy_order->num_of_orders == 1) {
-                            new_order->quantity -= max_buy_order->quantity;
-                            decrement_level(available_products, max_buy_order);
+                        if (same_order->num_of_orders == 1) {
+                            new_order->quantity -= same_order->quantity;
+                            decrement_level(available_products, same_order);
                             int index = 0;
                             for (int i = 1; i <= o_size; i++) {
-                                if (book->orders[i]->order_id == max_buy_order->order_id) {
+                                if (book->orders[i]->order_id == same_order->order_id) {
                                     index = i;
                                 }
                             }
@@ -446,21 +449,21 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                                 for (int i = index; i < o_size; i++) {
                                     book->orders[i] = book->orders[i + 1];
                                 }
-                                max_buy_order->fulfilled = 1;
+                                same_order->fulfilled = 1;
                                 o_size -= 1;
                                 swim(o_size, book);
-                                private_enqueue(book, max_buy_order);
-                                // free(max_buy_order->order_type);
-                                // free(max_buy_order->product_name);
-                                // free(max_buy_order);
+                                // private_enqueue(book, same_order);
+                                free(same_order->order_type);
+                                free(same_order->product_name);
+                                free(same_order);
                             }
                             break;
                         }
-                        new_order->quantity -= max_buy_order->quantity;
-                        struct order *filled_order = delete_same_order(&max_buy_order, max_buy_order->order_id, max_buy_order->trader_id);
+                        new_order->quantity -= same_order->quantity;
+                        struct order *filled_order = delete_same_order(&same_order, same_order->order_id, same_order->trader_id);
                         for (int i = 1; i <= o_size; i++) {
                             if (book->orders[i]->order_id == filled_order->order_id) {
-                                book->orders[i] = max_buy_order;
+                                book->orders[i] = same_order;
                             }
                         }
                         free(filled_order->order_type);
