@@ -447,7 +447,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                                     book->orders[i] = book->orders[i + 1];
                                 }
                                 o_size -= 1;
-                                swim(o_size, book);
+                                // swim(o_size, book);
                                 free(max_buy_order->order_type);
                                 free(max_buy_order->product_name);
                                 free(max_buy_order);
