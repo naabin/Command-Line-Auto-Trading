@@ -405,6 +405,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
         if (new_order->price > max_buy_order->price) break;
         //This will exit the loop after filling orders
         if (new_order->fulfilled) {
+            printf("does it come here\n");
             decrement_level(available_products, new_order);
             break;
         }
@@ -432,15 +433,15 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                             }
                         }
                         if (max_buy_order->num_of_orders == 1) {
-                            // printf("third if\n");
                             max_buy_order->fulfilled = 1;
                             new_order->quantity -= max_buy_order->quantity;
                             break;
                         }
                         new_order->quantity -= max_buy_order->quantity;
                         struct order *filled_order = delete_same_order(&max_buy_order, max_buy_order->order_id, max_buy_order->trader_id);
-                        filled_order->fulfilled = 1;
-                        filled_order->same_orders = NULL;
+                        free(filled_order->order_type);
+                        free(filled_order->product_name);
+                        free(filled_order);
                     }
                     decrement_level(available_products, max_buy_order);
                 } else {
