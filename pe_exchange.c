@@ -50,7 +50,7 @@ int main(int argc, char **argv)
 	register_signal(SIGCHLD, sigchild_handler);
 	int num_of_traders = argc - 2;
 	struct trader **traders = (struct trader **)malloc(sizeof(struct trader *) * num_of_traders);
-	struct order_book *book = create_orderbook(10);
+	struct order_book *book = create_orderbook(1);
 	if (argc <= 2) {
 		free(traders);
 		free_products(exchanging_products);

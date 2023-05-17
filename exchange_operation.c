@@ -2,7 +2,7 @@
 #include "pe_exchange.h"
 int compare_orders(struct order* o1, struct order *o2)
 {
-    return o1->price < o2->price;
+    return o1->price > o2->price;
 }
 
 struct order_book* create_orderbook(int order_size)
@@ -28,30 +28,37 @@ int is_empty(struct order_book *book) {
 //bootom-up heapify
 void swim(int k, struct order_book *book)
 {
-    while (k > 1 && book->compare_orders(book->orders[k/2], book->orders[k]))
+    k = book->size - 1;
+    while (k > 0 && book->compare_orders(book->orders[k], book->orders[(k - 1)/2]))
     {
-        swap_orders(book, k/2, k);
-        k = k/2;
+        swap_orders(book, k, (k-1)/2);
+        k = (k - 1)/2;
     }
 }
 //top dowm heapify
 void sink(int k, struct order_book *book)
 {
-    while (2*k <= book->size)
-    {
-        int j = 2*k;
-        if (j < book->size && book->compare_orders(book->orders[j], book->orders[j+1])) j++;
-        if (!book->compare_orders(book->orders[k], book->orders[j])) break;
-        swap_orders(book, k, j);
-        k = j;
+    int current = k;
+    int left = 2 * k + 1;
+    int right = 2 * k + 2;
+    if (left < book->size && book->compare_orders(book->orders[left], book->orders[current])) {
+        current = left;
+    }    
+    if (right < book->size && book->compare_orders(book->orders[right], book->orders[current])) {
+        current = right;
+    }
+    if (current != k) {
+        swap_orders(book, k, current);
+        sink(current, book);
     }
 }
 
 struct order* dequeue(struct order_book* book)
 {
-    struct order *temp = book->orders[1];
-    swap_orders(book, 1, book->size--);
-    sink(1, book);
+    struct order *temp = book->orders[0];
+    swap_orders(book, 0, book->size - 1);
+    book->size--;
+    sink(0, book);
     return temp;
 }
 void insert_same_order(struct order *order, struct order *new_order)
@@ -135,41 +142,41 @@ struct order* enqueue_order(struct order_book *book, char * order_type, int orde
     o->same_orders = NULL;
     if (book->size == book->capaity) 
     {
-        book->capaity *= 2;
+        book->capaity += 1;
         book->orders = (struct order**)realloc(book->orders, sizeof(struct order*) * book->capaity);
     }
     if (book->size == 0)
     {
-        book->orders[++book->size] = o;
+        book->orders[book->size] = o;
+        book->size++;
         return o;
     }
-    else
+    int found = 0;
+    struct order *same_order = NULL;
+    for (int i = 0; i < book->size; i++) {
+        struct order *o1 = book->orders[i];
+        if (o->price == o1->price && strcmp(o->product_name, o1->product_name) == 0 && (o->quantity == o1->quantity)
+            && (strcmp(o->order_type, o1->order_type) == 0)) {
+            same_order = o1;
+            found = 1;
+        }    
+    }
+    if (found)
     {
-        int found = 0;
-        struct order *same_order = NULL;
-        for (int i = 1; i <= book->size; i++) {
-            struct order *o1 = book->orders[i];
-            if (o->price == o1->price && strcmp(o->product_name, o1->product_name) == 0 && (o->quantity == o1->quantity)
-             && (strcmp(o->order_type, o1->order_type) == 0)) {
-                same_order = o1;
-                found = 1;
-            }    
-        }
-        if (found)
-        {
-            insert_same_order(same_order, o);
-            return same_order;
-        } 
-        else {
-            book->orders[++book->size] = o;
-            swim(book->size, book);    
-        }
+        printf("does it come here\n");
+        insert_same_order(same_order, o);
+        return same_order;
+    } 
+    else {
+        book->orders[book->size] = o;
+        book->size++; 
+        swim(book->size, book);   
     }
     return o;
 }
 
 int search_product_in_book(char *product_name, struct order_book* book) {
-    for (int i = 1; i <= book->size; i++) {
+    for (int i = 0; i < book->size; i++) {
         char *p_name = book->orders[i]->product_name;
         if (strcmp(product_name, p_name) == 0) {
             return 1;
@@ -227,7 +234,7 @@ int cancel_order(struct order_book *book, int order_id, struct trader* t, struct
     int found = 0;
     int delete_index = 0;
     struct order *deleting_order = NULL;
-    for (int i = 1; i <= book->size; i++) {
+    for (int i = 0; i < book->size; i++) {
         if (book->orders[i]->num_of_orders > 1) {
             deleting_order = delete_same_order(&book->orders[i], order_id, t->id);
             found = deleting_order != NULL ? 1 : 0;
@@ -287,7 +294,7 @@ int cancel_order(struct order_book *book, int order_id, struct trader* t, struct
 int update_order(struct order_book* book, int order_id, int new_quanity, int new_price, struct trader *t) {
     if ((order_id < 0) && (order_id > book->size)) return 0;
     if (((new_quanity < 1) && (new_quanity > 999999)) && ((new_price < 1) && (new_price > 999999))) return 0;
-    for (int i = 1; i <= book->size; i++) {
+    for (int i = 0; i < book->size; i++) {
         if (book->orders[i]->num_of_orders > 1) {
             struct order *updating_order = delete_same_order(&book->orders[i], order_id, t->id);
                 if (updating_order == NULL) return 1;
@@ -398,7 +405,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
     struct products *available_products, write_fill fill_message, send_sig signal_traders, int *fees)
 {
     int o_size = book->size;
-    while (book->size >= 1) {
+    while (book->size >= 0) {
         if (new_order->fulfilled) {
             printf("does it come here\n");
             decrement_level(available_products, new_order);
@@ -465,7 +472,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                         }
                         new_order->quantity -= same_order->quantity;
                         struct order *filled_order = delete_same_order(&same_order, same_order->order_id, same_order->trader_id);
-                        for (int i = 1; i <= o_size; i++) {
+                        for (int i = 0; i < o_size; i++) {
                             if (book->orders[i]->order_id == filled_order->order_id) {
                                 book->orders[i] = same_order;
                             }
@@ -511,7 +518,7 @@ void process_buy_order(struct order *new_order, struct order_book *book, struct 
     write_fill fill_message, send_sig signal_traders, int *fees) {
         //TODO: not sure if this will find the smallest sell order
         int size = book->size;
-        for (int i = size; i > 0; i--) {
+        for (int i = size-1; i >= 0; i--) {
             struct order *current_order = book->orders[i];
             if (strcmp(current_order->order_type, BUY) == 0 || current_order->trader_id == t->id || (strcmp(current_order->product_name, new_order->product_name) != 0)) {
                 continue;
