@@ -503,9 +503,10 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
         printf("%d %d\n", book->orders[i]->order_id, book->orders[i]->price);
     }
     if (size_changed) {
-        book->orders = realloc(book->orders, o_size + book->size);
+        book->size += o_size;
+        book->orders = realloc(book->orders, book->size);
     }
-    book->size += o_size;
+    book->size = o_size;
     swim(book->size, book);
 }
 
