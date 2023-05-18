@@ -456,7 +456,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                                     swap_orders(book, i, i+1);
                                 }
                                 o_size -= 1;
-                                book->orders = realloc(book->orders, o_size);
+                                // book->orders = realloc(book->orders, o_size);
                                 // swim(o_size, book);
                                 free(same_order->order_type);
                                 free(same_order->product_name);
