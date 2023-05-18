@@ -491,6 +491,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
             decrement_level(available_products, max_buy_order);
         }
     }
+    book->orders = realloc(book->orders, o_size);
     book->size = o_size;
     swim(o_size, book);
 }
