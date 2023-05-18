@@ -462,9 +462,10 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                                 o_size -= 1;
                                 // book->orders = realloc(book->orders, o_size);
                                 // swim(o_size, book);
-                                free(same_order->order_type);
-                                free(same_order->product_name);
-                                free(same_order);
+                                same_order->fulfilled = 1;
+                                // free(same_order->order_type);
+                                // free(same_order->product_name);
+                                // free(same_order);
                                 // for (int i = 0; i < o_size; i++) {
                                 //     printf("%d %d\n", book->orders[i]->order_id, book->orders[i]->price);
                                 // }
