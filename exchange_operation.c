@@ -453,6 +453,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                                 if (book->orders[i]->order_id == same_order->order_id) {
                                     printf("%d %d\n", book->orders[i]->order_id, book->orders[i]->price);
                                     index = i;
+                                    break;
                                 }
                             }
                             if (index) {
