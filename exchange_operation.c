@@ -404,6 +404,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
     struct products *available_products, write_fill fill_message, send_sig signal_traders, int *fees)
 {
     int o_size = book->size;
+    int size_changed = 0;
     while (book->size >= 0) {
         if (new_order->fulfilled) {
             printf("does it come here\n");
@@ -455,6 +456,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                                 for (int i = index; i < o_size-1; i++) {
                                     swap_orders(book, i, i+1);
                                 }
+                                size_changed = 1;
                                 o_size -= 1;
                                 // book->orders = realloc(book->orders, o_size);
                                 // swim(o_size, book);
@@ -491,9 +493,11 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
             decrement_level(available_products, max_buy_order);
         }
     }
-    book->orders = realloc(book->orders, o_size);
+    if (size_changed) {
+        book->orders = realloc(book->orders, o_size);
+    }
     book->size = o_size;
-    swim(o_size, book);
+    swim(book->size, book);
 }
 
 void process_order_for_buy(struct order* current_order, struct order* new_order, struct products* available_products, int *fees, write_fill fill_message, send_sig signal_traders)
