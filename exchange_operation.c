@@ -163,7 +163,6 @@ struct order* enqueue_order(struct order_book *book, char * order_type, int orde
     }
     if (found)
     {
-        printf("does it come here\n");
         insert_same_order(same_order, o);
         return same_order;
     } 
@@ -447,14 +446,14 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                             new_order->quantity -= same_order->quantity;
                             decrement_level(available_products, same_order);
                             int index = 0;
-                            for (int i = 1; i <= o_size; i++) {
+                            for (int i = 0; i < o_size; i++) {
                                 if (book->orders[i]->order_id == same_order->order_id) {
                                     index = i;
                                 }
                             }
                             if (index) {
                                 for (int i = index; i < o_size; i++) {
-                                    book->orders[i] = book->orders[i + 1];
+                                    swap_orders(book, i, i+1);
                                 }
                                 same_order->fulfilled = 1;
                                 o_size -= 1;
