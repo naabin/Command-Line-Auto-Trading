@@ -249,11 +249,9 @@ int cancel_order(struct order_book *book, int order_id, struct trader* t, struct
 
 int update_order(struct order_book* book, int order_id, long new_quanity, long new_price, struct trader *t) {
     printf("does it come here: 252\n");
-    int is_valid = 0;
-    is_valid = order_id >= 0;
-    is_valid = (new_quanity >= 1) && (new_quanity <= 999999);
-    is_valid = (new_price >= 1) && (new_price <= 999999);
-    if (!is_valid) return 0;
+    int is_qty_valid = (new_quanity >= 1) && (new_quanity <= 999999);
+    int is_price_valid = (new_price >= 1) && (new_price <= 999999);
+    if (!is_qty_valid || !is_price_valid) return 0;
     for (int i = 0; i < book->size; i++) {
         if (book->orders[i]->num_of_orders > 1) {
             struct order temp = *book->orders[i];
@@ -270,16 +268,8 @@ int update_order(struct order_book* book, int order_id, long new_quanity, long n
                 num_of_orders--;
             }
         }
-        else if (book->orders[i]->order_id == order_id) {
-            printf("does it come here 273\n");
-            if (book->orders[i]->trader->trader_fifo_id != t->trader_fifo_id) {
-                printf("%d %d\n", t->id, book->orders[i]->trader->id);
-                printf("%d %d\n", t->trader_fd, book->orders[i]->trader->trader_fd);
-                printf("armageddon\n");
-                return 0;
-            }
+        else if ((book->orders[i]->order_id == order_id) && ((book->orders[i]->trader->id) == t->id)) {
             if (book->orders[i]->fulfilled){
-                printf("armageddon 2\n");
                 return 0;
             } 
             book->orders[i]->quantity = new_quanity;
