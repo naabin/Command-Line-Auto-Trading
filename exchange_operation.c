@@ -445,6 +445,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                         }
                         if (same_order.num_of_orders == 1) {
                             max_buy_order->fulfilled = 1;
+                            new_order->quantity -= same_order.quantity;
                             decrement_level(available_products, max_buy_order);
                             break;
                         }
