@@ -248,7 +248,6 @@ int cancel_order(struct order_book *book, int order_id, struct trader* t, struct
 }
 
 int update_order(struct order_book* book, int order_id, long new_quanity, long new_price, struct trader *t) {
-    printf("does it come here: 252\n");
     int is_qty_valid = (new_quanity >= 1) && (new_quanity <= 999999);
     int is_price_valid = (new_price >= 1) && (new_price <= 999999);
     if (!is_qty_valid || !is_price_valid) return 0;
