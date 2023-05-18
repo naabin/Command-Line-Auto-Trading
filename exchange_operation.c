@@ -456,6 +456,8 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                             }
                             if (index) {
                                 for (int i = index; i < o_size-1; i++) {
+                                    printf("%d %d\n", book->orders[i]->order_id, book->orders[i]->price);
+                                    printf("%d %d\n", book->orders[i + 1]->order_id, book->orders[i + 1]->price);
                                     swap_orders(book, i, i+1);
                                 }
                                 size_changed = 1;
