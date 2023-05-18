@@ -403,17 +403,13 @@ void process_order_for_sell(struct order* current_order, struct order *new_order
 void process_sell_order(struct order *new_order, struct order_book *book, struct trader *t, 
     struct products *available_products, write_fill fill_message, send_sig signal_traders, int *fees)
 {
-    int o_size = book->size - 1;
-    int size_changed = 0;
+    int o_size = book->size;
     while (book->size - 1 >= 0) {
         if (new_order->fulfilled) {
-            printf("does it come here\n");
             decrement_level(available_products, new_order);
             break;
         }
         struct order * max_buy_order = dequeue(book);
-        printf("book_size: %d\n", book->size);
-        printf("o_size : %d\n", o_size);
         if ((strcmp(max_buy_order->order_type, "SELL") == 0) || (max_buy_order->trader_id == t->id) || max_buy_order->fulfilled) {
             continue;
         }
@@ -428,67 +424,33 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
         }
         else if (max_buy_order->quantity < new_order->quantity) {
                 if (max_buy_order->num_of_orders > 1) {
-                    struct order *same_order = max_buy_order;
-                    while(same_order->num_of_orders >= 1) {
+                    struct order same_order = *max_buy_order;
+                    int index = 0;
+                    int num_of_orders = max_buy_order->num_of_orders;
+                    while(same_order.num_of_orders >= 1) {
                         if (new_order->quantity <= 0) {
                             new_order->fulfilled = 1;
                             break;
                         }
-                        process_order_for_sell(same_order, new_order, available_products, fees, fill_message, signal_traders);
+                        process_order_for_sell(&same_order, new_order, available_products, fees, fill_message, signal_traders);
                         //lookout for partially filled order
-                        if (new_order->quantity < same_order->quantity && new_order->quantity > 0) {
+                        if (new_order->quantity < same_order.quantity && new_order->quantity > 0) {
                             // printf("second if\n");
-                            if (!same_order->fulfilled && same_order->quantity > 0) {
-                                same_order->quantity -= new_order->quantity;
-                                process_order_for_sell(same_order, new_order, available_products, fees, fill_message, signal_traders);
+                            if (!same_order.fulfilled && same_order.quantity > 0) {
+                                same_order.quantity -= new_order->quantity;
+                                process_order_for_sell(&same_order, new_order, available_products, fees, fill_message, signal_traders);
                                 new_order->fulfilled = 1;
                                 break;
                             }
                         }
-                        if (same_order->num_of_orders == 1) {
-                            new_order->quantity -= same_order->quantity;
-                            decrement_level(available_products, same_order);
-                            int index = 0;
-                            for (int i = 0; i < o_size; i++) {
-                                if (book->orders[i]->order_id == same_order->order_id) {
-                                    printf("%d %d\n", book->orders[i]->order_id, book->orders[i]->price);
-                                    index = i;
-                                    break;
-                                }
-                            }
-                            if (index) {
-                                for (int i = index; i < o_size-1; i++) {
-                                    printf("%d %d\n", book->orders[i]->order_id, book->orders[i]->price);
-                                    printf("%d %d\n", book->orders[i + 1]->order_id, book->orders[i + 1]->price);
-                                    swap_orders(book, i, i+1);
-                                }
-                                size_changed = 1;
-                                o_size -= 1;
-                                // book->orders = realloc(book->orders, o_size);
-                                // swim(o_size, book);
-                                same_order->fulfilled = 1;
-                                // free(same_order->order_type);
-                                // free(same_order->product_name);
-                                // free(same_order);
-                                // for (int i = 0; i < o_size; i++) {
-                                //     printf("%d %d\n", book->orders[i]->order_id, book->orders[i]->price);
-                                // }
-                            }
+                        if (same_order.num_of_orders == 1) {
+                            max_buy_order->fulfilled = 1;
+                            decrement_level(available_products, max_buy_order);
                             break;
                         }
-                        new_order->quantity -= same_order->quantity;
-                        
-                        for (int i = 0; i < o_size; i++) {
-                            if (book->orders[i]->order_id == same_order->order_id) {
-                                struct order *filled_order = delete_same_order(&same_order, same_order->order_id, same_order->trader_id);
-                                book->orders[i] = same_order;
-                                free(filled_order->order_type);
-                                free(filled_order->product_name);
-                                free(filled_order);
-                                break;
-                            }
-                        }
-                        
+                        same_order = *max_buy_order->same_orders[index++];
+                        num_of_orders--;
+                        same_order.num_of_orders = num_of_orders;
                     }
                 } else {
                     process_order_for_sell(max_buy_order, new_order, available_products, fees, fill_message, signal_traders);
@@ -503,18 +465,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
             decrement_level(available_products, max_buy_order);
         }
     }
-    printf("After return\n");
-    printf("book_size: %d\n", book->size);
-    printf("o_size : %d\n", o_size);
-    if (size_changed) {
-        for (int i = 0; i < o_size+book->size; i++) {
-            printf("%d %d\n", book->orders[i]->order_id, book->orders[i]->price);
-        }
-        book->size += o_size;
-        book->orders = realloc(book->orders, book->size);
-    } else {
-        book->size = o_size + 1;
-    }    
+    book->size = o_size;
     swim(book->size, book);
 }
 
