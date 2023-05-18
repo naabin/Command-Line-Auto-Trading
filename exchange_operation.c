@@ -102,7 +102,7 @@ struct order* enqueue_order(struct order_book *book, char * order_type, int orde
     }
     for (int i = 0; i < book->size; i++) {
         struct order *o1 = book->orders[i];
-        if (new_order->price == o1->price && (strcmp(new_order->product_name, o1->product_name) == 0) && (new_order->quantity == o1->quantity)
+        if (new_order->price == o1->price && (strcmp(new_order->product_name, o1->product_name) == 0)
             && (strcmp(new_order->order_type, o1->order_type) == 0)) {
             insert_same_order(book->orders[i], new_order);
             return book->orders[i];
@@ -124,6 +124,14 @@ int search_product_in_book(char *product_name, struct order_book* book) {
     return 0;
 }
 
+int count_quantity_for_multiple_orders(struct order* order) {
+    int qty = 0;
+    qty += order->quantity;
+    for (int i = 0; i < order->num_of_orders-1; i++) {
+        qty += order->same_orders[i]->quantity;
+    }
+    return qty;
+}
 
 
 void print_orderbook(struct order_book *book, struct products* available_products) 
@@ -140,7 +148,7 @@ void print_orderbook(struct order_book *book, struct products* available_product
             if (!o->fulfilled) {
             if (strcmp(o->product_name, p_name) == 0) {
                 if (o->num_of_orders > 1) {
-                    printf("%s\t\t%s %d @ $%d (%d orders)\n",LOG_PREFIX, o->order_type, (int)o->quantity * o->num_of_orders, (int)o->price, o->num_of_orders);    
+                    printf("%s\t\t%s %d @ $%d (%d orders)\n",LOG_PREFIX, o->order_type, count_quantity_for_multiple_orders(o), (int)o->price, o->num_of_orders);    
                 } else {
                     printf("%s\t\t%s %d @ $%d (%d order)\n", LOG_PREFIX, o->order_type, (int)o->quantity, (int)o->price, o->num_of_orders);
                 }
@@ -185,6 +193,7 @@ int cancel_order(struct order_book *book, int order_id, struct trader* t, struct
     }
     int found = 0;
     struct order *deleting_order = NULL;
+    int index = -1;
     for (int i = 0; i < book->size; i++) {
         if (book->orders[i]->num_of_orders > 1) {
             struct order temp = *book->orders[i];
@@ -194,6 +203,7 @@ int cancel_order(struct order_book *book, int order_id, struct trader* t, struct
                 if ((temp.order_id == order_id) && (temp.trader->id == t->id) && (!temp.fulfilled)) {
                     deleting_order = &temp;
                     book->orders[i]->same_orders[index]->fulfilled = 1;
+                    //TODO: swap next product and same orders
                     break;
                 }
                 if(temp.num_of_orders == 1) {
@@ -213,6 +223,7 @@ int cancel_order(struct order_book *book, int order_id, struct trader* t, struct
             }
             book->orders[i]->fulfilled = 1;
             deleting_order = book->orders[i];
+            index = i;
             found = 1;
             break;
         }
@@ -232,6 +243,16 @@ int cancel_order(struct order_book *book, int order_id, struct trader* t, struct
         }
         free(message);
         decrement_level(available_products, deleting_order);
+        if (index >= 0) {
+            for (int i = index + 1; i < book->size - 1; i++) {
+                swap_orders(book, i, i+1);
+            }
+            free(book->orders[index]->product_name);
+            free(book->orders[index]->order_type);
+            free(book->orders[index]);
+            book->size--;
+            swim(book->size, book);
+        }
         return 1;
     } else {
         return 0;
