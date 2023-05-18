@@ -477,15 +477,18 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                             break;
                         }
                         new_order->quantity -= same_order->quantity;
-                        struct order *filled_order = delete_same_order(&same_order, same_order->order_id, same_order->trader_id);
+                        
                         for (int i = 0; i < o_size; i++) {
-                            if (book->orders[i]->order_id == filled_order->order_id) {
+                            if (book->orders[i]->order_id == same_order->order_id) {
+                                struct order *filled_order = delete_same_order(&same_order, same_order->order_id, same_order->trader_id);
                                 book->orders[i] = same_order;
+                                free(filled_order->order_type);
+                                free(filled_order->product_name);
+                                free(filled_order);
+                                break;
                             }
                         }
-                        free(filled_order->order_type);
-                        free(filled_order->product_name);
-                        free(filled_order);
+                        
                     }
                 } else {
                     process_order_for_sell(max_buy_order, new_order, available_products, fees, fill_message, signal_traders);
