@@ -427,7 +427,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                     struct order same_order = *max_buy_order;
                     int index = 0;
                     int num_of_orders = max_buy_order->num_of_orders;
-                    while(same_order.num_of_orders >= 1) {
+                    while(num_of_orders >= 1) {
                         if (new_order->quantity <= 0) {
                             new_order->fulfilled = 1;
                             break;
@@ -448,6 +448,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                             decrement_level(available_products, max_buy_order);
                             break;
                         }
+                        new_order->quantity -= same_order.quantity;
                         same_order = *max_buy_order->same_orders[index++];
                         num_of_orders--;
                         same_order.num_of_orders = num_of_orders;
