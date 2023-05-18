@@ -494,7 +494,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
         }
     }
     if (size_changed) {
-        book->orders = realloc(book->orders, o_size);
+        book->orders = realloc(book->orders, o_size + 1);
     }
     book->size = o_size;
     swim(book->size, book);
