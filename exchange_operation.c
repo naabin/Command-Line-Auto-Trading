@@ -244,12 +244,12 @@ int cancel_order(struct order_book *book, int order_id, struct trader* t, struct
         free(message);
         decrement_level(available_products, deleting_order);
         if (index >= 0) {
-            for (int i = index + 1; i < book->size - 1; i++) {
+            for (int i = index; i < book->size - 1; i++) {
                 swap_orders(book, i, i+1);
             }
-            free(book->orders[index]->product_name);
-            free(book->orders[index]->order_type);
-            free(book->orders[index]);
+            free(book->orders[book->size-1]->product_name);
+            free(book->orders[book->size-1]->order_type);
+            free(book->orders[book->size-1]);
             book->size--;
             swim(book->size, book);
         }
