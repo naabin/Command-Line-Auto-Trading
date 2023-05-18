@@ -23,7 +23,7 @@ int main(int argc, char **argv)
     }
     // register signal handler
     struct sigaction sig;
-    sig.sa_flags = 0;
+    sig.sa_flags = SA_SIGINFO;
     sig.sa_sigaction = signal_handler;
     int signum = sigaction(SIGUSR1, &sig, NULL);
     handle_error(signum, "sigaction failed to send signal");
@@ -45,6 +45,7 @@ int main(int argc, char **argv)
     while (1)
     {
         // pausing becuse signal is interrupting the following instructions
+        pause();
         char buf[128];
         int res = read(read_fd, buf, 128);
         handle_error(res, "Failed to read from exchange pipe");

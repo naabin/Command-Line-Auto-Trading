@@ -105,7 +105,7 @@ struct order* enqueue_order(struct order_book *book, char * order_type, int orde
     struct order *same_order = NULL;
     for (int i = 0; i < book->size; i++) {
         struct order *o1 = book->orders[i];
-        if (o->price == o1->price && strcmp(o->product_name, o1->product_name) == 0 && (o->quantity == o1->quantity)
+        if (o->price == o1->price && (strcmp(o->product_name, o1->product_name) == 0) && (o->quantity == o1->quantity)
             && (strcmp(o->order_type, o1->order_type) == 0)) {
             same_order = o1;
             found = 1;
@@ -190,7 +190,7 @@ void decrement_level(struct products *a_products, struct order *c_order) {
 }
 
 int cancel_order(struct order_book *book, int order_id, struct trader* t, struct products *available_products, struct trader **traders, int num_of_traders) {
-    if (order_id < 0 && order_id > book->size) {
+    if ((order_id < 0) && (order_id > book->size)) {
         return 0;
     }
     int found = 0;
@@ -249,8 +249,11 @@ int cancel_order(struct order_book *book, int order_id, struct trader* t, struct
 }
 
 int update_order(struct order_book* book, int order_id, int new_quanity, int new_price, struct trader *t) {
+    printf("does it come here: 252\n");
     if ((order_id < 0)) return 0;
+    printf("does it come here 254\n");
     if (((new_quanity < 1) && (new_quanity > 999999)) && ((new_price < 1) && (new_price > 999999))) return 0;
+    printf("does it come here 256\n");
     for (int i = 0; i < book->size; i++) {
         if (book->orders[i]->num_of_orders > 1) {
             struct order temp = *book->orders[i];
@@ -268,7 +271,8 @@ int update_order(struct order_book* book, int order_id, int new_quanity, int new
             }
         }
         else if (book->orders[i]->order_id == order_id) {
-            if (book->orders[i]->trader->id != t->id) {
+            printf("does it come here 273\n");
+            if (book->orders[i]->trader_id != t->id) {
                 return 0;
             }
             if (book->orders[i]->fulfilled) return 0;
