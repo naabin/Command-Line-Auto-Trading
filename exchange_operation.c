@@ -403,7 +403,7 @@ void process_order_for_sell(struct order* current_order, struct order *new_order
 void process_sell_order(struct order *new_order, struct order_book *book, struct trader *t, 
     struct products *available_products, write_fill fill_message, send_sig signal_traders, int *fees)
 {
-    int o_size = book->size;
+    int o_size = book->size - 1;
     int size_changed = 0;
     while (book->size >= 0) {
         if (new_order->fulfilled) {
@@ -499,7 +499,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
     printf("book_size: %d\n", book->size);
     printf("o_size : %d\n", o_size);
     if (size_changed) {
-        book->orders = realloc(book->orders, o_size + 1);
+        book->orders = realloc(book->orders, o_size);
     }
     book->size = o_size;
     swim(book->size, book);
