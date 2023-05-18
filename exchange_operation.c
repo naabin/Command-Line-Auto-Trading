@@ -451,6 +451,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                             int index = 0;
                             for (int i = 0; i < o_size; i++) {
                                 if (book->orders[i]->order_id == same_order->order_id) {
+                                    printf("%d %d\n", book->orders[i]->order_id, book->orders[i]->price);
                                     index = i;
                                 }
                             }
@@ -476,11 +477,11 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                         }
                         new_order->quantity -= same_order->quantity;
                         struct order *filled_order = delete_same_order(&same_order, same_order->order_id, same_order->trader_id);
-                        // for (int i = 0; i < o_size; i++) {
-                        //     if (book->orders[i]->order_id == filled_order->order_id) {
-                        //         book->orders[i] = same_order;
-                        //     }
-                        // }
+                        for (int i = 0; i < o_size; i++) {
+                            if (book->orders[i]->order_id == filled_order->order_id) {
+                                book->orders[i] = same_order;
+                            }
+                        }
                         free(filled_order->order_type);
                         free(filled_order->product_name);
                         free(filled_order);
