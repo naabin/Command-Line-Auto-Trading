@@ -314,6 +314,7 @@ int main(int argc, char **argv)
 			}
 		}
 		TRADER_EXIT_STATUS = -1;
+		TRADER_CONNECTION = -1;
 		if (active == 0) {
 			break;
 		}
