@@ -29,7 +29,7 @@ int is_empty(struct order_book *book) {
 void swim(int k, struct order_book *book)
 {
     k = book->size - 1;
-    while (k > 0 && book->compare_orders(book->orders[k], book->orders[(k - 1)/2]))
+    while ((k != 0) && book->compare_orders(book->orders[k], book->orders[(k - 1)/2]))
     {
         swap_orders(book, k, (k-1)/2);
         k = (k - 1)/2;
@@ -68,7 +68,7 @@ void insert_same_order(struct order *order, struct order *new_order)
         order->same_orders[0] = new_order;
         order->num_of_orders++;
     } else {
-        order->same_orders = realloc(order->same_orders, order->num_of_orders);
+        order->same_orders = realloc(order->same_orders, sizeof(struct order) * (order->num_of_orders));
         order->same_orders[order->num_of_orders - 1] = new_order;
         order->num_of_orders++;
     }
@@ -77,18 +77,18 @@ void insert_same_order(struct order *order, struct order *new_order)
 
 struct order* enqueue_order(struct order_book *book, char * order_type, int order_id, char *product_name, long quantity, long price, struct trader *t)
 {
-    struct order *o = malloc(sizeof(struct order));
-    o->order_type = malloc(sizeof(char) * (strlen(order_type) + 1));
-    o->fulfilled = 0;
-    strcpy(o->order_type, order_type);
-    o->order_id = order_id;
-    o->product_name = malloc(sizeof(char) * (strlen(product_name) + 1));
-    strcpy(o->product_name, product_name);
-    o->quantity = quantity;
-    o->num_of_orders = 1;
-    o->price = price;
-    o->trader = t;
-    o->same_orders = NULL;
+    struct order *new_order = malloc(sizeof(struct order));
+    new_order->order_type = malloc(sizeof(char) * (strlen(order_type) + 1));
+    new_order->fulfilled = 0;
+    strcpy(new_order->order_type, order_type);
+    new_order->order_id = order_id;
+    new_order->product_name = malloc(sizeof(char) * (strlen(product_name) + 1));
+    strcpy(new_order->product_name, product_name);
+    new_order->quantity = quantity;
+    new_order->num_of_orders = 1;
+    new_order->price = price;
+    new_order->trader = t;
+    new_order->same_orders = NULL;
     if (book->size == book->capaity) 
     {
         book->capaity += 1;
@@ -96,31 +96,22 @@ struct order* enqueue_order(struct order_book *book, char * order_type, int orde
     }
     if (book->size == 0)
     {
-        book->orders[book->size] = o;
+        book->orders[book->size] = new_order;
         book->size++;
-        return o;
+        return new_order;
     }
-    int found = 0;
-    struct order *same_order = NULL;
     for (int i = 0; i < book->size; i++) {
         struct order *o1 = book->orders[i];
-        if (o->price == o1->price && (strcmp(o->product_name, o1->product_name) == 0) && (o->quantity == o1->quantity)
-            && (strcmp(o->order_type, o1->order_type) == 0)) {
-            same_order = o1;
-            found = 1;
+        if (new_order->price == o1->price && (strcmp(new_order->product_name, o1->product_name) == 0) && (new_order->quantity == o1->quantity)
+            && (strcmp(new_order->order_type, o1->order_type) == 0)) {
+            insert_same_order(book->orders[i], new_order);
+            return book->orders[i];
         }    
     }
-    if (found)
-    {
-        insert_same_order(same_order, o);
-        return same_order;
-    } 
-    else {
-        book->orders[book->size] = o;
-        book->size++; 
-        swim(book->size, book);   
-    }
-    return o;
+    book->orders[book->size] = new_order;
+    book->size++; 
+    swim(book->size, book);   
+    return new_order;
 }
 
 int search_product_in_book(char *product_name, struct order_book* book) {
