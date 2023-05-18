@@ -405,7 +405,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
 {
     int o_size = book->size - 1;
     int size_changed = 0;
-    while (book->size >= 0) {
+    while (book->size - 1 >= 0) {
         if (new_order->fulfilled) {
             printf("does it come here\n");
             decrement_level(available_products, new_order);
@@ -498,6 +498,9 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
     printf("After return\n");
     printf("book_size: %d\n", book->size);
     printf("o_size : %d\n", o_size);
+    for (int i = 0; i < o_size; i++) {
+        printf("%d %d\n", book->orders[i]->order_id, book->orders[i]->price);
+    }
     if (size_changed) {
         book->orders = realloc(book->orders, o_size);
     }
