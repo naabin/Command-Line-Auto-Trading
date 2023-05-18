@@ -188,12 +188,12 @@ int main(int argc, char **argv)
 						send_invalid_message_to_current_trader(t, invalid_message);
 						continue;
 					}
-					int new_qty = atoi(qty);
+					long new_qty = atoi(qty);
 					char *price = strtok(NULL, ";");
 					if (price == NULL) {
 						send_invalid_message_to_current_trader(t, invalid_message);
 					}
-					int new_price = atoi(price);
+					long new_price = atoi(price);
 					int updated = update_order(book, order_id, new_qty, new_price, t);
 					if (updated) {
 						char* msg = malloc(sizeof(char) * INPUT_LENGTH);
