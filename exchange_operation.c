@@ -412,6 +412,8 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
             break;
         }
         struct order * max_buy_order = dequeue(book);
+        printf("book_size: %d\n", book->size);
+        printf("o_size : %d\n", o_size);
         if ((strcmp(max_buy_order->order_type, "SELL") == 0) || (max_buy_order->trader_id == t->id) || max_buy_order->fulfilled) {
             continue;
         }
@@ -493,6 +495,9 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
             decrement_level(available_products, max_buy_order);
         }
     }
+    printf("After return\n");
+    printf("book_size: %d\n", book->size);
+    printf("o_size : %d\n", o_size);
     if (size_changed) {
         book->orders = realloc(book->orders, o_size + 1);
     }
