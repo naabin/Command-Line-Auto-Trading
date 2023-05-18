@@ -256,9 +256,8 @@ int main(int argc, char **argv)
 						free(invalid_message);
 						continue;
 					}
-					int trader_id = t->id;
 					//add order to the order book
-					struct order *new_order = enqueue_order(book, order_type, order_id, product_name, quantity, price, trader_id, t);
+					struct order *new_order = enqueue_order(book, order_type, order_id, product_name, quantity, price, t->id, t);
 					//incerement the level of the product
 					if (new_order->num_of_orders == 1) {
 						increment_level(exchanging_products, order_type, product_name);

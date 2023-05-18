@@ -273,6 +273,7 @@ int update_order(struct order_book* book, int order_id, int new_quanity, int new
         else if (book->orders[i]->order_id == order_id) {
             printf("does it come here 273\n");
             if (book->orders[i]->trader_id != t->id) {
+                printf("%d %d\n", t->id, book->orders[i]->trader_id);
                 printf("armageddon\n");
                 return 0;
             }
