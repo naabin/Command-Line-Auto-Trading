@@ -75,7 +75,7 @@ void insert_same_order(struct order *order, struct order *new_order)
 }
 
 
-struct order* enqueue_order(struct order_book *book, char * order_type, int order_id, char *product_name, int quantity, int price, int trader_id, struct trader *t)
+struct order* enqueue_order(struct order_book *book, char * order_type, int order_id, char *product_name, long quantity, long price, struct trader *t)
 {
     struct order *o = malloc(sizeof(struct order));
     o->order_type = malloc(sizeof(char) * (strlen(order_type) + 1));
@@ -87,7 +87,6 @@ struct order* enqueue_order(struct order_book *book, char * order_type, int orde
     o->quantity = quantity;
     o->num_of_orders = 1;
     o->price = price;
-    o->trader_id = trader_id;
     o->trader = t;
     o->same_orders = NULL;
     if (book->size == book->capaity) 
@@ -150,9 +149,9 @@ void print_orderbook(struct order_book *book, struct products* available_product
             if (!o->fulfilled) {
             if (strcmp(o->product_name, p_name) == 0) {
                 if (o->num_of_orders > 1) {
-                    printf("%s\t\t%s %d @ $%d (%d orders)\n",LOG_PREFIX, o->order_type, o->quantity * o->num_of_orders, o->price, o->num_of_orders);    
+                    printf("%s\t\t%s %d @ $%d (%d orders)\n",LOG_PREFIX, o->order_type, (int)o->quantity * o->num_of_orders, (int)o->price, o->num_of_orders);    
                 } else {
-                    printf("%s\t\t%s %d @ $%d (%d order)\n", LOG_PREFIX, o->order_type, o->quantity, o->price, o->num_of_orders);
+                    printf("%s\t\t%s %d @ $%d (%d order)\n", LOG_PREFIX, o->order_type, (int)o->quantity, (int)o->price, o->num_of_orders);
                 }
             }
             }
@@ -201,7 +200,7 @@ int cancel_order(struct order_book *book, int order_id, struct trader* t, struct
             int num_of_orders = book->orders[i]->num_of_orders;
             int index = 0;
             while (num_of_orders >= 1) {
-                if ((temp.order_id == order_id) && (temp.trader_id == t->id) && (!temp.fulfilled)) {
+                if ((temp.order_id == order_id) && (temp.trader->id == t->id) && (!temp.fulfilled)) {
                     deleting_order = &temp;
                     book->orders[i]->same_orders[index]->fulfilled = 1;
                     break;
@@ -218,7 +217,7 @@ int cancel_order(struct order_book *book, int order_id, struct trader* t, struct
         }
         else if ((book->orders[i]->order_id == order_id) && (!book->orders[i]->fulfilled)) {
             // check if the trader owner matches with order
-            if (book->orders[i]->trader_id != t->id) {
+            if (book->orders[i]->trader->id != t->id) {
                 return 0;
             }
             book->orders[i]->fulfilled = 1;
@@ -231,7 +230,7 @@ int cancel_order(struct order_book *book, int order_id, struct trader* t, struct
         char *message = malloc(sizeof(char) * 1024);
         sprintf(message, "MARKET %s %s %d %d;", deleting_order->order_type, deleting_order->product_name, deleting_order->order_id, 0);
         for (int i = 0; i < num_of_traders; i++) {
-            if (traders[i]->id != deleting_order->trader_id && traders[i]->active_status) {
+            if (traders[i]->id != deleting_order->trader->id && traders[i]->active_status) {
                 if (-1 == write(traders[i]->exchange_fd, message, strlen(message))) {
                     perror("write error broadcasting cancel: ");
                 }
@@ -252,8 +251,8 @@ int update_order(struct order_book* book, int order_id, int new_quanity, int new
     printf("does it come here: 252\n");
     int is_valid = 0;
     is_valid = order_id >= 0;
-    is_valid = (new_quanity >= 1) && (new_quanity < 999999);
-    is_valid = (new_price >= 1) && (new_price < 999999);
+    is_valid = (new_quanity >= 1) && (new_quanity <= 999999);
+    is_valid = (new_price >= 1) && (new_price <= 999999);
     if (!is_valid) return 0;
     for (int i = 0; i < book->size; i++) {
         if (book->orders[i]->num_of_orders > 1) {
@@ -261,10 +260,10 @@ int update_order(struct order_book* book, int order_id, int new_quanity, int new
             int index = 0;
             int num_of_orders = book->orders[i]->num_of_orders;
             while (num_of_orders >= 1) {
-                if ((temp.order_id == order_id) && (temp.trader_id == t->id) && (!temp.fulfilled)) {
+                if ((temp.order_id == order_id) && (temp.trader->id == t->id) && (!temp.fulfilled)) {
                     if ((temp.quantity == new_quanity) && (temp.price == new_price)) return 0;
                     book->orders[i]->same_orders[index]->fulfilled = 1;
-                    enqueue_order(book, temp.order_type, temp.order_id, temp.product_name, new_quanity, new_price, temp.trader_id, temp.trader);
+                    enqueue_order(book, temp.order_type, temp.order_id, temp.product_name, new_quanity, new_price, temp.trader);
                     return 0;
                 }
                 temp = *book->orders[i]->same_orders[index++];
@@ -273,8 +272,9 @@ int update_order(struct order_book* book, int order_id, int new_quanity, int new
         }
         else if (book->orders[i]->order_id == order_id) {
             printf("does it come here 273\n");
-            if (book->orders[i]->trader->trader_pid != t->trader_pid) {
-                printf("%d %d\n", t->id, book->orders[i]->trader_id);
+            if (book->orders[i]->trader->trader_fd != t->trader_fd) {
+                printf("%d %d\n", t->id, book->orders[i]->trader->id);
+                printf("%d %d\n", t->trader_fd, book->orders[i]->trader->trader_fd);
                 printf("armageddon\n");
                 return 0;
             }
@@ -334,7 +334,7 @@ void log_match_order_to_stdout(char *order_type, struct order *o, struct order *
     }
     
     printf("%s Match: Order %d [T%d], New Order %d [T%d], value: $%d, fee: $%d.\n",
-        LOG_PREFIX, o->order_id, o->trader_id, new_order->order_id, new_order->trader_id, value, fee);
+        LOG_PREFIX, o->order_id, o->trader->id, new_order->order_id, new_order->trader->id, value, fee);
     if (strcmp(order_type, SELL) == 0) {
         new_order->trader->position_qty[trader_pos] -= qty;
         new_order->trader->position_price[trader_pos] += (value - fee);
@@ -371,7 +371,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
             break;
         }
         struct order * max_buy_order = dequeue(book);
-        if ((strcmp(max_buy_order->order_type, "SELL") == 0) || (max_buy_order->trader_id == t->id) || max_buy_order->fulfilled) {
+        if ((strcmp(max_buy_order->order_type, "SELL") == 0) || (max_buy_order->trader->id == t->id) || max_buy_order->fulfilled) {
             continue;
         }
         if (new_order->price > max_buy_order->price) break;
@@ -467,7 +467,7 @@ void process_buy_order(struct order *new_order, struct order_book *book, struct 
         // }
         for (int i = o_size-1; i >= 0; i--) {
             struct order *current_order = book->orders[i];
-            if (strcmp(current_order->order_type, BUY) == 0 || current_order->trader_id == t->id || (strcmp(current_order->product_name, new_order->product_name) != 0)) {
+            if (strcmp(current_order->order_type, BUY) == 0 || current_order->trader->id == t->id || (strcmp(current_order->product_name, new_order->product_name) != 0)) {
                 continue;
             }
             else if (current_order->price <= new_order->price) {

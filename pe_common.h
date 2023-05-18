@@ -26,13 +26,12 @@ typedef void (*write_fill)(int fd, int order_id, int qty);
 typedef void (*send_sig)(pid_t pid);
 
 struct order {
-    int trader_id;
     int order_id;
     char *order_type;
     char *product_name;
     int num_of_orders;
-    int quantity;
-    int price;
+    long quantity;
+    long price;
     //Temporary solution to not show the fulfilled order to stdout
     int fulfilled;
     struct trader *trader;
@@ -78,7 +77,7 @@ struct trader {
 void print_orderbook(struct order_book *book, struct products*);
 struct order_book* create_orderbook(int order_size);
 void free_orderbook(struct order_book* book);
-struct order* enqueue_order(struct order_book *book, char *, int, char*, int, int, int, struct trader *t);
+struct order* enqueue_order(struct order_book *book, char *, int, char*, long, long, struct trader *t);
 void print_position(struct products *, struct trader **, int);
 int cancel_order(struct order_book *book, int order_id, struct trader *t, struct products* available_products, struct trader **traders, int num_of_traders);
 int update_order(struct order_book* book, int order_id, int new_quanity, int new_price, struct trader *t);

@@ -238,7 +238,7 @@ int main(int argc, char **argv)
 						send_invalid_message_to_current_trader(t, invalid_message);
 						continue;
 					}
-					int quantity = atoi(qty);
+					long quantity = atol(qty);
 					if (quantity < 1 || quantity > 999999) {
 						// send invalid
 						send_invalid_message_to_current_trader(t, invalid_message);
@@ -249,7 +249,7 @@ int main(int argc, char **argv)
 						send_invalid_message_to_current_trader(t, invalid_message);
 						continue;
 					}
-					int price = atoi(p);
+					long price = atol(p);
 					if (price < 1 || price > 999999) {
 						write_to_trader(t->exchange_fd, invalid_message, strlen(invalid_message));
 						send_signal_to_trader(t->trader_pid);
@@ -257,7 +257,7 @@ int main(int argc, char **argv)
 						continue;
 					}
 					//add order to the order book
-					struct order *new_order = enqueue_order(book, order_type, order_id, product_name, quantity, price, t->id, t);
+					struct order *new_order = enqueue_order(book, order_type, order_id, product_name, quantity, price, t);
 					//incerement the level of the product
 					if (new_order->num_of_orders == 1) {
 						increment_level(exchanging_products, order_type, product_name);
@@ -270,7 +270,7 @@ int main(int argc, char **argv)
 					free(accept_message);
 					// broadcast the message to other traders
 					char *market_message = malloc(sizeof(char) * INPUT_LENGTH);
-					sprintf(market_message, "MARKET %s %s %d %d;", order_type, product_name, quantity, price);
+					sprintf(market_message, "MARKET %s %s %d %d;", order_type, product_name, (int)quantity, (int)price);
 					for (int i = 0; i < num_of_traders; i++) {
 						if (traders[i]->id != t->id && traders[i]->active_status) {
 							write_to_trader(traders[i]->exchange_fd, market_message, strlen(market_message));
