@@ -457,7 +457,7 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                                 }
                                 o_size -= 1;
                                 book->orders = realloc(book->orders, o_size);
-                                swim(o_size, book);
+                                // swim(o_size, book);
                                 free(same_order->order_type);
                                 free(same_order->product_name);
                                 free(same_order);
@@ -514,8 +514,11 @@ void process_order_for_buy(struct order* current_order, struct order* new_order,
 void process_buy_order(struct order *new_order, struct order_book *book, struct trader *t, struct products *available_products, 
     write_fill fill_message, send_sig signal_traders, int *fees) {
         //TODO: not sure if this will find the smallest sell order
-        int size = book->size;
-        for (int i = size-1; i >= 0; i--) {
+        int o_size = book->size;
+        // while(o_size >= 0) {
+        //     struct order low_sell_
+        // }
+        for (int i = o_size-1; i >= 0; i--) {
             struct order *current_order = book->orders[i];
             if (strcmp(current_order->order_type, BUY) == 0 || current_order->trader_id == t->id || (strcmp(current_order->product_name, new_order->product_name) != 0)) {
                 continue;
