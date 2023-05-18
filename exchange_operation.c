@@ -74,56 +74,6 @@ void insert_same_order(struct order *order, struct order *new_order)
     }
 }
 
-struct order* delete_same_order(struct order **order, int order_id, int trader_id) {
-    if (order_id == (*order)->order_id && ((*order)->trader_id) == trader_id) {
-        struct order *temp = *order;
-        if ((*order)->num_of_orders == 2) {
-            (*order) = (*order)->same_orders[0];
-            (*order)->num_of_orders = temp->num_of_orders - 1;
-            free(temp->same_orders);
-            temp->same_orders = NULL;
-            return temp;
-        }
-        for (int i = 0; i < temp->num_of_orders - 1; i++) {
-            (*order)->same_orders[i] = (*order)->same_orders[i + 1];
-        }
-        (*order) = (*order)->same_orders[0];
-        (*order)->num_of_orders = temp->num_of_orders - 1;
-        (*order)->same_orders = realloc((*order)->same_orders, (*order)->num_of_orders);
-        return temp;
-    }
-    int index = -1;
-    for (int i = 0; i < (*order)->num_of_orders - 1; i++) {
-        struct order *o = (*order)->same_orders[i];
-        if ((o->order_id == order_id) && (o->trader_id == trader_id)) {
-            index = i;
-        }
-    }
-    if (index >= 0) {
-        struct order * deleting_order = (*order)->same_orders[index];
-        for (int i = index; i < (*order)->num_of_orders - 2; i++) {
-            (*order)->same_orders[i] = (*order)->same_orders[i + 1];
-        }
-        (*order)->num_of_orders--;
-        (*order)->same_orders = realloc((*order)->same_orders, (*order)->num_of_orders - 1);
-        return deleting_order;
-    }
-    return NULL;
-}
-void private_enqueue(struct order_book *book, struct order *o) {
-    if (book->size == book->capaity) 
-    {
-        book->capaity *= 2;
-        book->orders = (struct order**)realloc(book->orders, sizeof(struct order*) * book->capaity);
-    }
-    if (book->size == 0)
-    {
-        book->orders[++book->size] = o;
-    } else {
-        book->orders[++book->size] = o;
-        swim(book->size, book); 
-    }
-}
 
 struct order* enqueue_order(struct order_book *book, char * order_type, int order_id, char *product_name, int quantity, int price, int trader_id, struct trader *t)
 {
@@ -299,7 +249,7 @@ int cancel_order(struct order_book *book, int order_id, struct trader* t, struct
 }
 
 int update_order(struct order_book* book, int order_id, int new_quanity, int new_price, struct trader *t) {
-    if ((order_id < 0) && (order_id > book->size)) return 0;
+    if ((order_id < 0)) return 0;
     if (((new_quanity < 1) && (new_quanity > 999999)) && ((new_price < 1) && (new_price > 999999))) return 0;
     for (int i = 0; i < book->size; i++) {
         if (book->orders[i]->num_of_orders > 1) {
