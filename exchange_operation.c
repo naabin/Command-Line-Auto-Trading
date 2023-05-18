@@ -307,6 +307,7 @@ int update_order(struct order_book* book, int order_id, int new_quanity, int new
             if (book->orders[i]->trader->id != t->id) {
                 return 0;
             }
+            if (book->orders[i]->fulfilled) return 0;
             book->orders[i]->quantity = new_quanity;
             book->orders[i]->price = new_price;
             return 1;
@@ -416,14 +417,15 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
         if (new_order->price > max_buy_order->price) break;
         //This will exit the loop after filling orders
         if (max_buy_order->quantity > new_order->quantity) {
-            max_buy_order->quantity = max_buy_order->quantity - new_order->quantity;
             process_order_for_sell(max_buy_order, new_order, available_products, fees, fill_message, signal_traders);
+            max_buy_order->quantity = max_buy_order->quantity - new_order->quantity;
             new_order->fulfilled = 1;
             decrement_level(available_products, new_order);
             break;
         }
         else if (max_buy_order->quantity < new_order->quantity) {
                 if (max_buy_order->num_of_orders > 1) {
+                    // use stack space to process multiple orders
                     struct order same_order = *max_buy_order;
                     int index = 0;
                     int num_of_orders = max_buy_order->num_of_orders;
