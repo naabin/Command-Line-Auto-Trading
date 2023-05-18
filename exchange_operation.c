@@ -452,18 +452,16 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
                                 }
                             }
                             if (index) {
-                                for (int i = index; i < o_size; i++) {
+                                for (int i = index; i < o_size-1; i++) {
                                     swap_orders(book, i, i+1);
                                 }
-                                same_order->fulfilled = 1;
                                 o_size -= 1;
                                 book->orders = realloc(book->orders, o_size);
                                 swim(o_size, book);
-                                // private_enqueue(book, same_order);
                                 free(same_order->order_type);
                                 free(same_order->product_name);
                                 free(same_order);
-                                for (int i = 1; i <= o_size; i++) {
+                                for (int i = 0; i < o_size; i++) {
                                     printf("%d %d\n", book->orders[i]->order_id, book->orders[i]->price);
                                 }
                             }
