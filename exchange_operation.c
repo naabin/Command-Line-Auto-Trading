@@ -261,7 +261,8 @@ int update_order(struct order_book* book, int order_id, long new_quanity, long n
                     if ((temp.quantity == new_quanity) && (temp.price == new_price)) return 0;
                     book->orders[i]->same_orders[index]->fulfilled = 1;
                     enqueue_order(book, temp.order_type, temp.order_id, temp.product_name, new_quanity, new_price, temp.trader);
-                    return 0;
+                    swim(book->size, book);
+                    return 1;
                 }
                 temp = *book->orders[i]->same_orders[index++];
                 num_of_orders--;
@@ -273,6 +274,7 @@ int update_order(struct order_book* book, int order_id, long new_quanity, long n
             } 
             book->orders[i]->quantity = new_quanity;
             book->orders[i]->price = new_price;
+            swim(book->size, book);
             return 1;
         }
     }
