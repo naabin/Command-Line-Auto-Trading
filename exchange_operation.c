@@ -239,16 +239,12 @@ int cancel_order(struct order_book *book, int order_id, struct trader* t, struct
         }
     }
     if (found) {
-        char *message = malloc(sizeof(char) * 1024);
+        char *message = malloc(sizeof(char) * INPUT_LENGTH);
         sprintf(message, "MARKET %s %s %d %d;", deleting_order->order_type, deleting_order->product_name, 0, 0);
         for (int i = 0; i < num_of_traders; i++) {
             if (traders[i]->id != deleting_order->trader->id && traders[i]->active_status) {
-                if (-1 == write(traders[i]->exchange_fd, message, strlen(message))) {
-                    perror("write error broadcasting cancel: ");
-                }
-                if (-1 == kill(traders[i]->trader_pid, SIGUSR1)) {
-                    perror("kill error while broadcasting cancelled order: ");
-                }
+                write_to_trader(traders[i]->exchange_fd, message, strlen(message));
+                send_signal_to_trader(traders[i]->trader_pid);
             }
         }
         free(message);
@@ -270,10 +266,12 @@ int cancel_order(struct order_book *book, int order_id, struct trader* t, struct
     }
 }
 
-int update_order(struct order_book* book, int order_id, long new_quanity, long new_price, struct trader *t) {
+int update_order(struct order_book* book, int order_id, long new_quanity, long new_price, struct trader *t, struct trader **traders, int num_of_traders, struct products *available_products) {
     int is_qty_valid = (new_quanity >= 1) && (new_quanity <= 999999);
     int is_price_valid = (new_price >= 1) && (new_price <= 999999);
     if (!is_qty_valid || !is_price_valid) return 0;
+    struct order * amending_order = NULL;
+    int found = 0;
     for (int i = 0; i < book->size; i++) {
         if (book->orders[i]->num_of_orders > 1) {
             struct order temp = *book->orders[i];
@@ -283,7 +281,9 @@ int update_order(struct order_book* book, int order_id, long new_quanity, long n
                 if ((temp.order_id == order_id) && (temp.trader->id == t->id) && (!temp.fulfilled)) {
                     if ((temp.quantity == new_quanity) && (temp.price == new_price)) return 0;
                     book->orders[i]->same_orders[index]->fulfilled = 1;
-                    enqueue_order(book, temp.order_type, temp.order_id, temp.product_name, new_quanity, new_price, temp.trader);
+                    amending_order = enqueue_order(book, temp.order_type, temp.order_id, temp.product_name, new_quanity, new_price, temp.trader);
+                    increment_level(available_products, amending_order->order_type, amending_order->product_name);
+                    found = 1;
                     swim(book->size, book);
                     return 1;
                 }
@@ -295,13 +295,23 @@ int update_order(struct order_book* book, int order_id, long new_quanity, long n
             if (book->orders[i]->fulfilled){
                 return 0;
             } 
-            // int temp = book->orders[i]->price;
             book->orders[i]->quantity = new_quanity;
             book->orders[i]->price = new_price;
-            // swim(book->size, book);
+            amending_order = book->orders[i];
             heapify(book);
-            return 1;
+            // return 1;
         }
+    }
+    if (found) {
+        char *message = malloc(sizeof(char) * INPUT_LENGTH);
+        sprintf(message, "MARKET %s %s %d %d;", amending_order->order_type, amending_order->product_name, (int)amending_order->quantity, (int)amending_order->price);
+        for (int i = 0; i < num_of_traders; i++) {
+            if (traders[i]->id != amending_order->trader->id && traders[i]->active_status) {
+                write_to_trader(traders[i]->exchange_fd, message, strlen(message));
+                send_signal_to_trader(traders[i]->trader_pid);
+            }
+        }
+        free(message);
     }
     return 0;
 }

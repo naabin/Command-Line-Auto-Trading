@@ -190,7 +190,7 @@ int main(int argc, char **argv)
 						send_invalid_message_to_current_trader(t, invalid_message);
 					}
 					long new_price = atol(price);
-					int updated = update_order(book, order_id, new_qty, new_price, t);
+					int updated = update_order(book, order_id, new_qty, new_price, t, traders, num_of_traders, exchanging_products);
 					if (updated) {
 						char* msg = malloc(sizeof(char) * INPUT_LENGTH);
 						sprintf(msg, "AMENDED %d;", order_id);

@@ -80,7 +80,7 @@ void free_orderbook(struct order_book* book);
 struct order* enqueue_order(struct order_book *book, char *, int, char*, long, long, struct trader *t);
 void print_position(struct products *, struct trader **, int);
 int cancel_order(struct order_book *book, int order_id, struct trader *t, struct products* available_products, struct trader **traders, int num_of_traders);
-int update_order(struct order_book* book, int order_id, long new_quanity, long new_price, struct trader *t);
+int update_order(struct order_book* book, int order_id, long new_quanity, long new_price, struct trader *t,struct trader **traders, int num_of_traders, struct products *available_products);
 int check_if_product_exist(struct products *available_products, char *new_product_name);
 void increment_level(struct products *available_products, char *order_type, char *product_name);
 void process_sell_order(struct order *new_order, struct order_book *book, struct trader *t, struct products *available_products, write_fill, send_sig, int *fees);
