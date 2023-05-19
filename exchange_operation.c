@@ -313,6 +313,7 @@ int update_order(struct order_book* book, int order_id, long new_quanity, long n
             }
         }
         free(message);
+        return 1;
     }
     return 0;
 }
