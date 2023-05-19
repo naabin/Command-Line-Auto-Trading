@@ -240,7 +240,7 @@ int cancel_order(struct order_book *book, int order_id, struct trader* t, struct
     }
     if (found) {
         char *message = malloc(sizeof(char) * 1024);
-        sprintf(message, "MARKET %s %s %d %d;", deleting_order->order_type, deleting_order->product_name, deleting_order->order_id, 0);
+        sprintf(message, "MARKET %s %s %d %d;", deleting_order->order_type, deleting_order->product_name, 0, 0);
         for (int i = 0; i < num_of_traders; i++) {
             if (traders[i]->id != deleting_order->trader->id && traders[i]->active_status) {
                 if (-1 == write(traders[i]->exchange_fd, message, strlen(message))) {
