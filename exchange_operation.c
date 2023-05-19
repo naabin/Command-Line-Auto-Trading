@@ -111,8 +111,9 @@ struct order* enqueue_order(struct order_book *book, char * order_type, int orde
         if (new_order->price == o1->price && (strcmp(new_order->product_name, o1->product_name) == 0)
             && (strcmp(new_order->order_type, o1->order_type) == 0)) {
             insert_same_order(book->orders[i], new_order);
+            struct order * temp = book->orders[i];
             heapify(book);
-            return book->orders[i];
+            return temp;
         }    
     }
     book->orders[book->size] = new_order;
