@@ -110,8 +110,8 @@ struct order* enqueue_order(struct order_book *book, char * order_type, int orde
         }    
     }
     book->orders[book->size] = new_order;
-    swim(book->size, book);
     book->size++; 
+    swim(book->size, book);
     return new_order;
 }
 
