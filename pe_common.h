@@ -77,6 +77,9 @@ struct trader
     int *position_qty;
     int *position_price;
 };
+typedef void (*send_invalid)(struct trader *t, char *invalid_message);
+
+long extract_int_value(char*invalid_message, struct trader *t, send_invalid, int is_id);
 
 void print_orderbook(struct order_book *book, struct products *);
 struct order_book *create_orderbook(int order_size);

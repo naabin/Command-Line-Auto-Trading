@@ -705,3 +705,13 @@ void free_orderbook(struct order_book *book)
     free(book->orders);
     free(book);
 }
+long extract_int_value(char*invalid_message, struct trader *t, send_invalid send_invalid_msg, int is_id) {
+    char *value = strtok(NULL, ";");
+    if (value == NULL)
+    {
+        send_invalid_msg(t, invalid_message);
+        return -1;
+    }
+    if (is_id) return atoi(value);
+    else return atol(value);
+}

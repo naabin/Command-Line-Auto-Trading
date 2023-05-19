@@ -83,48 +83,18 @@ int main(int argc, char **argv)
 			printf("%s Connected to %s\n", LOG_PREFIX, t_fd);
 		}
 	}
-	for (int i = 0; i < num_of_traders; i++)
-	{
-		struct epoll_event es = {0};
-		es.events = EPOLLIN | EPOLLET;
-		es.data.ptr = calloc(1, sizeof(struct trader));
-		traders[i] = es.data.ptr;
-		traders[i]->exchange_fd = ex_fds[i];
-		traders[i]->exchange_fifo_id = i;
-		traders[i]->trader_pid = pids[i];
-		// sprintf(traders[i]->ex_fifo_name, FIFO_EXCHANGE, (short)i);
-		traders[i]->trader_fd = tr_fds[i];
-		traders[i]->trader_fifo_id = i;
-		traders[i]->active_status = 1;
-		traders[i]->id = i;
-		traders[i]->current_order_id = 0;
-		traders[i]->position_price = (int *)calloc(exchanging_products->num_of_products, sizeof(int) * exchanging_products->num_of_products + 1);
-		traders[i]->position_qty = (int *)calloc(exchanging_products->num_of_products, sizeof(int) * exchanging_products->num_of_products + 1);
-		// sprintf(traders[i]->tr_fifo_name, FIFO_TRADER, (short)i);
-		int ret = epoll_ctl(epoll_inst, EPOLL_CTL_ADD, tr_fds[i], &es);
-		if (ret < 0)
-		{
-			perror("epoll_ctl: ");
-			return 1;
-		}
-	}
+	setup_epoll_event_for_traders(traders, exchanging_products, num_of_traders, ex_fds, pids, tr_fds, epoll_inst);
 	for (int i = 0; i < num_of_traders; i++)
 	{
 		char message[128];
 		char *string = "MARKET OPEN;";
 		sprintf(message, "%s", string);
-		if (write(traders[i]->exchange_fd, message, strlen(message)) < 0)
-		{
-			perror("Failed to write: ");
-		}
+		write_to_trader(traders[i]->exchange_fd, message, strlen(message));
 		memset(message, 0, 128);
 	}
 	for (int i = 0; i < num_of_traders; i++)
 	{
-		if (-1 == kill(traders[i]->trader_pid, SIGUSR1))
-		{
-			perror("Failed to send signal");
-		};
+		send_signal_to_trader(traders[i]->trader_pid);
 	}
 	sleep(0.1);
 
@@ -170,13 +140,15 @@ int main(int argc, char **argv)
 				if (strcmp(CANCEL, order_type) == 0)
 				{
 					// validate the id and process the cancel
-					char *id = strtok(NULL, ";");
-					if (id == NULL)
-					{
-						send_invalid_message_to_current_trader(t, invalid_message);
-						continue;
-					}
-					int order_id = atoi(id);
+					// char *id = strtok(NULL, ";");
+					// if (id == NULL)
+					// {
+					// 	send_invalid_message_to_current_trader(t, invalid_message);
+					// 	continue;
+					// }
+					// int order_id = atoi(id);
+					int order_id = extract_int_value(invalid_message, t, send_invalid_message_to_current_trader, 1);
+					if (order_id < 0) continue;
 					int cancelled = cancel_order(book, order_id, t, exchanging_products, traders, num_of_traders);
 					// remove the order from the orderbook
 					if (cancelled)
