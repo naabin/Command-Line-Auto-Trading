@@ -10,11 +10,7 @@ volatile int EXIT_STATUS = 0;
 volatile int TRADER_EXIT_STATUS = -1;
 volatile int TRADER_CONNECTION = -1;
 
-// static int compare_fd(const void *a, const void *b) {
-// 	struct epoll_event *ea = (struct epoll_event*)a;
-// 	struct epoll_event *eb = (struct epoll_event*)b;
-// 	return ea->data.fd - eb->data.fd;
-// }
+
 void sigusr1_handler(int sig, siginfo_t *info, void *context) {
     TRADER_CONNECTION = info->si_pid;
 }

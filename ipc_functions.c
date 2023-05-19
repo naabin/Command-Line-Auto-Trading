@@ -53,6 +53,7 @@ void write_to_trader(int fd, char* message, int size) {
     if (-1 == write(fd, message, size)) {
         perror("write error: ");
     }
+    sleep(0.1);
 }
 void send_signal_to_trader(pid_t trader_pid) {
     if (-1 == kill(trader_pid, SIGUSR1)) {
