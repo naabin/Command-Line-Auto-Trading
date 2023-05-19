@@ -10,6 +10,7 @@ struct order_book* create_orderbook(int order_size)
     struct order_book *book = (struct order_book*)calloc(1, sizeof(struct order_book));
     book->compare_orders = compare_orders;
     book->capaity = order_size;
+    book->size = 0;
     book->orders = (struct order**)(calloc(book->capaity, sizeof(struct order*) * book->capaity));
     return book;
 }
@@ -24,12 +25,12 @@ void swap_orders(struct order_book *book, int i, int j)
 int is_empty(struct order_book *book) {
     return book->size == 0;
 }
-
 //bootom-up heapify
 void swim(int k, struct order_book *book)
 {
+    if (k <= 0) return;
     k = book->size - 1;
-    while ((k != 0) && book->compare_orders(book->orders[k], book->orders[(k - 1)/2]))
+    while ((k >= 0) && book->compare_orders(book->orders[k], book->orders[(k - 1)/2]))
     {
         swap_orders(book, k, (k-1)/2);
         k = (k - 1)/2;
@@ -38,18 +39,18 @@ void swim(int k, struct order_book *book)
 //top dowm heapify
 void sink(int k, struct order_book *book)
 {
-    int current = k;
+    int largest = k;
     int left = 2 * k + 1;
     int right = 2 * k + 2;
-    if (left < book->size && book->compare_orders(book->orders[left], book->orders[current])) {
-        current = left;
+    if (left < book->size && book->compare_orders(book->orders[left], book->orders[largest])) {
+        largest = left;
     }    
-    if (right < book->size && book->compare_orders(book->orders[right], book->orders[current])) {
-        current = right;
+    if (right < book->size && book->compare_orders(book->orders[right], book->orders[largest])) {
+        largest = right;
     }
-    if (current != k) {
-        swap_orders(book, k, current);
-        sink(current, book);
+    if (largest != k) {
+        swap_orders(book, k, largest);
+        sink(largest, book);
     }
 }
 
@@ -109,8 +110,8 @@ struct order* enqueue_order(struct order_book *book, char * order_type, int orde
         }    
     }
     book->orders[book->size] = new_order;
+    swim(book->size, book);
     book->size++; 
-    swim(book->size, book);   
     return new_order;
 }
 
@@ -250,7 +251,7 @@ int cancel_order(struct order_book *book, int order_id, struct trader* t, struct
             free(book->orders[book->size-1]->product_name);
             free(book->orders[book->size-1]->order_type);
             free(book->orders[book->size-1]);
-            book->size--;
+            book->size -= 1;
             swim(book->size, book);
         }
         return 1;
@@ -284,15 +285,10 @@ int update_order(struct order_book* book, int order_id, long new_quanity, long n
             if (book->orders[i]->fulfilled){
                 return 0;
             } 
-            int temp = book->orders[i]->price;
+            // int temp = book->orders[i]->price;
             book->orders[i]->quantity = new_quanity;
             book->orders[i]->price = new_price;
-            if (temp > new_price) {
-                swim(book->size, book);
-            } else {
-                sink(0, book);
-            }
-            
+            swim(book->size, book);
             return 1;
         }
     }
