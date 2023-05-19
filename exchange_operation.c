@@ -284,9 +284,15 @@ int update_order(struct order_book* book, int order_id, long new_quanity, long n
             if (book->orders[i]->fulfilled){
                 return 0;
             } 
+            int temp = book->orders[i]->price;
             book->orders[i]->quantity = new_quanity;
             book->orders[i]->price = new_price;
-            swim(book->size, book);
+            if (temp > new_price) {
+                swim(book->size, book);
+            } else {
+                sink(0, book);
+            }
+            
             return 1;
         }
     }
