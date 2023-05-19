@@ -53,6 +53,11 @@ void sink(int k, struct order_book *book)
         sink(largest, book);
     }
 }
+void heapify(struct order_book * book) {
+    for (int i = (book->size/2) - 1; i >= 0; i--) {
+        sink(i, book);
+    }
+}
 
 struct order* dequeue(struct order_book* book)
 {
@@ -252,7 +257,8 @@ int cancel_order(struct order_book *book, int order_id, struct trader* t, struct
             free(book->orders[book->size-1]->order_type);
             free(book->orders[book->size-1]);
             book->size -= 1;
-            swim(book->size, book);
+            heapify(book);
+            // swim(book->size, book);
         }
         return 1;
     } else {
@@ -288,7 +294,8 @@ int update_order(struct order_book* book, int order_id, long new_quanity, long n
             // int temp = book->orders[i]->price;
             book->orders[i]->quantity = new_quanity;
             book->orders[i]->price = new_price;
-            swim(book->size, book);
+            // swim(book->size, book);
+            heapify(book);
             return 1;
         }
     }
@@ -443,7 +450,8 @@ void process_sell_order(struct order *new_order, struct order_book *book, struct
         }
     }
     book->size = o_size;
-    swim(book->size, book);
+    // swim(book->size, book);
+    heapify(book);
 }
 
 void process_order_for_buy(struct order* current_order, struct order* new_order, struct products* available_products, int *fees, write_fill fill_message, send_sig signal_traders)
