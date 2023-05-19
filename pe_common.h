@@ -34,8 +34,8 @@ struct order {
     long price;
     //Temporary solution to not show the fulfilled order to stdout
     int fulfilled;
+    int is_same;
     struct trader *trader;
-    // struct order *next;
     struct order **same_orders;
 };
 

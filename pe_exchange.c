@@ -259,7 +259,7 @@ int main(int argc, char **argv)
 					//add order to the order book
 					struct order *new_order = enqueue_order(book, order_type, order_id, product_name, quantity, price, t);
 					//incerement the level of the product
-					if (new_order->num_of_orders == 1) {
+					if (new_order->num_of_orders == 1 && !new_order->is_same) {
 						increment_level(exchanging_products, order_type, product_name);
 					}
 					// send the accept message
