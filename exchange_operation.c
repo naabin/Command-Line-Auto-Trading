@@ -298,6 +298,7 @@ int update_order(struct order_book* book, int order_id, long new_quanity, long n
             book->orders[i]->quantity = new_quanity;
             book->orders[i]->price = new_price;
             amending_order = book->orders[i];
+            found = 1;
             heapify(book);
             // return 1;
         }
