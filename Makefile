@@ -18,7 +18,14 @@ $(TARGET1):$(OBJ)
 
 run:
 	./$(TARGET1) products.txt pe_trader
-# .PHONY: clean
+
+.PHONY: clean
 clean:
 	rm -f *.o *.obj $(TARGET1)
+
+.PHONY: test
+test:
+	$(CC) -o tests/unit-tetst tests/unit-tests.c -ftest-coverage $(CFLAGS) -fprofile-arcs
+
+
 

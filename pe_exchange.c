@@ -5,7 +5,7 @@
  */
 
 #include "pe_exchange.h"
-#define MAX_CONNECTIONS 10
+#define MAX_CONNECTIONS 20
 volatile int EXIT_STATUS = 0;
 volatile int TRADER_EXIT_STATUS = -1;
 volatile int TRADER_CONNECTION = -1;
