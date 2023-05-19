@@ -25,29 +25,32 @@
 typedef void (*write_fill)(int fd, int order_id, int qty);
 typedef void (*send_sig)(pid_t pid);
 
-struct order {
+struct order
+{
     int order_id;
     char *order_type;
     char *product_name;
     int num_of_orders;
     long quantity;
     long price;
-    //Temporary solution to not show the fulfilled order to stdout
+    // Temporary solution to not show the fulfilled order to stdout
     int fulfilled;
     int is_same;
     struct trader *trader;
     struct order **same_orders;
 };
 
-struct order_book {
+struct order_book
+{
     char *product_name;
     struct order **orders;
     int size;
     int capaity;
-    int (*compare_orders)(struct order*, struct order*);
+    int (*compare_orders)(struct order *, struct order *);
 };
 
-struct product {
+struct product
+{
     int buy_level;
     int sell_level;
     char *product_name;
@@ -59,7 +62,8 @@ struct products
     struct product **itms;
 };
 
-struct trader {
+struct trader
+{
     int id;
     int current_order_id;
     pid_t trader_pid;
@@ -73,14 +77,14 @@ struct trader {
     int *position_qty;
     int *position_price;
 };
-//file I/O
-void print_orderbook(struct order_book *book, struct products*);
-struct order_book* create_orderbook(int order_size);
-void free_orderbook(struct order_book* book);
-struct order* enqueue_order(struct order_book *book, char *, int, char*, long, long, struct trader *t);
+
+void print_orderbook(struct order_book *book, struct products *);
+struct order_book *create_orderbook(int order_size);
+void free_orderbook(struct order_book *book);
+struct order *enqueue_order(struct order_book *book, char *, int, char *, long, long, struct trader *t);
 void print_position(struct products *, struct trader **, int);
-int cancel_order(struct order_book *book, int order_id, struct trader *t, struct products* available_products, struct trader **traders, int num_of_traders);
-int update_order(struct order_book* book, int order_id, long new_quanity, long new_price, struct trader *t,struct trader **traders, int num_of_traders, struct products *available_products);
+int cancel_order(struct order_book *book, int order_id, struct trader *t, struct products *available_products, struct trader **traders, int num_of_traders);
+int update_order(struct order_book *book, int order_id, long new_quanity, long new_price, struct trader *t, struct trader **traders, int num_of_traders, struct products *available_products);
 int check_if_product_exist(struct products *available_products, char *new_product_name);
 void increment_level(struct products *available_products, char *order_type, char *product_name);
 void process_sell_order(struct order *new_order, struct order_book *book, struct trader *t, struct products *available_products, write_fill, send_sig, int *fees);

@@ -10,17 +10,18 @@ volatile int EXIT_STATUS = 0;
 volatile int TRADER_EXIT_STATUS = -1;
 volatile int TRADER_CONNECTION = -1;
 
-
-void sigusr1_handler(int sig, siginfo_t *info, void *context) {
-    TRADER_CONNECTION = info->si_pid;
+void sigusr1_handler(int sig, siginfo_t *info, void *context)
+{
+	TRADER_CONNECTION = info->si_pid;
 }
-void sigusr2_handler(int sig, siginfo_t *info, void*context) {
-    EXIT_STATUS = 1;
-    
+void sigusr2_handler(int sig, siginfo_t *info, void *context)
+{
+	EXIT_STATUS = 1;
 }
-void sigchild_handler(int sig, siginfo_t *info, void*context) {
-    TRADER_EXIT_STATUS = info->si_pid;
-    sleep(0.1);
+void sigchild_handler(int sig, siginfo_t *info, void *context)
+{
+	TRADER_EXIT_STATUS = info->si_pid;
+	sleep(0.1);
 }
 
 void send_invalid_message_to_current_trader(struct trader *t, char *invalid_message)
@@ -47,7 +48,8 @@ int main(int argc, char **argv)
 	int num_of_traders = argc - 2;
 	struct trader **traders = (struct trader **)malloc(sizeof(struct trader *) * num_of_traders);
 	struct order_book *book = create_orderbook(1);
-	if (argc <= 2) {
+	if (argc <= 2)
+	{
 		free(traders);
 		free_products(exchanging_products);
 		free_orderbook(book);
@@ -56,20 +58,24 @@ int main(int argc, char **argv)
 	int ex_fds[MAX_CONNECTIONS];
 	int tr_fds[MAX_CONNECTIONS];
 	pid_t pids[MAX_CONNECTIONS];
-	for (int i = 0; i < MAX_CONNECTIONS; i++) {
+	for (int i = 0; i < MAX_CONNECTIONS; i++)
+	{
 		ex_fds[i] = -1;
 		tr_fds[i] = -1;
 	}
 	int epoll_inst = epoll_create(MAX_CONNECTIONS);
-	for (int i = 0; i < num_of_traders; i++) {
+	for (int i = 0; i < num_of_traders; i++)
+	{
 		char e_fd[20];
 		char t_fd[20];
 		create_fds(e_fd, t_fd, i);
 		pid_t pid = fork();
-		if (pid == 0) {
+		if (pid == 0)
+		{
 			execute_trader_binary(i, argv[i + 2]);
 		}
-		if (pid > 0) {
+		if (pid > 0)
+		{
 			pids[i] = pid;
 			ex_fds[i] = open(e_fd, O_WRONLY);
 			printf("%s Connected to %s\n", LOG_PREFIX, e_fd);
@@ -77,7 +83,8 @@ int main(int argc, char **argv)
 			printf("%s Connected to %s\n", LOG_PREFIX, t_fd);
 		}
 	}
-	for (int i = 0; i < num_of_traders; i++) {
+	for (int i = 0; i < num_of_traders; i++)
+	{
 		struct epoll_event es = {0};
 		es.events = EPOLLIN | EPOLLET;
 		es.data.ptr = calloc(1, sizeof(struct trader));
@@ -91,171 +98,205 @@ int main(int argc, char **argv)
 		traders[i]->active_status = 1;
 		traders[i]->id = i;
 		traders[i]->current_order_id = 0;
-		traders[i]->position_price = (int*)calloc(exchanging_products->num_of_products, sizeof(int) * exchanging_products->num_of_products + 1);
-		traders[i]->position_qty = (int*)calloc(exchanging_products->num_of_products, sizeof(int) * exchanging_products->num_of_products + 1);
+		traders[i]->position_price = (int *)calloc(exchanging_products->num_of_products, sizeof(int) * exchanging_products->num_of_products + 1);
+		traders[i]->position_qty = (int *)calloc(exchanging_products->num_of_products, sizeof(int) * exchanging_products->num_of_products + 1);
 		// sprintf(traders[i]->tr_fifo_name, FIFO_TRADER, (short)i);
 		int ret = epoll_ctl(epoll_inst, EPOLL_CTL_ADD, tr_fds[i], &es);
-		if (ret < 0) {
+		if (ret < 0)
+		{
 			perror("epoll_ctl: ");
 			return 1;
 		}
 	}
-	for (int i = 0; i < num_of_traders; i++) {
+	for (int i = 0; i < num_of_traders; i++)
+	{
 		char message[128];
 		char *string = "MARKET OPEN;";
 		sprintf(message, "%s", string);
-		if (write(traders[i]->exchange_fd, message, strlen(message)) < 0) {
+		if (write(traders[i]->exchange_fd, message, strlen(message)) < 0)
+		{
 			perror("Failed to write: ");
 		}
 		memset(message, 0, 128);
 	}
-	for (int i = 0; i < num_of_traders; i++) {
-		if (-1==kill(traders[i]->trader_pid, SIGUSR1)) {
+	for (int i = 0; i < num_of_traders; i++)
+	{
+		if (-1 == kill(traders[i]->trader_pid, SIGUSR1))
+		{
 			perror("Failed to send signal");
 		};
 	}
 	sleep(0.1);
-	
-	//Event loop
-	while (1) {
+
+	// Event loop
+	while (1)
+	{
 		// pause();
-		struct epoll_event events[MAX_CONNECTIONS];	
+		struct epoll_event events[MAX_CONNECTIONS];
 		int ret = epoll_wait(epoll_inst, events, MAX_CONNECTIONS, -1);
-		if (ret < -1) {
+		if (ret < -1)
+		{
 			perror("Ret: ");
 			break;
 		}
-		for (int i = 0; i < ret; i++) {
-			struct trader* t = events[i].data.ptr;
+		for (int i = 0; i < ret; i++)
+		{
+			struct trader *t = events[i].data.ptr;
 			char buffer[128];
 			ssize_t bytes_read = read(t->trader_fd, buffer, 128);
-			if (bytes_read > 0 && t->active_status) {
-				for (int i = 0; i < bytes_read; i++) {
-					if (buffer[i] == ';') {
+			if (bytes_read > 0 && t->active_status)
+			{
+				for (int i = 0; i < bytes_read; i++)
+				{
+					if (buffer[i] == ';')
+					{
 						buffer[i] = '\0';
 						break;
 					}
 				}
 				printf("%s [T%d] Parsing command: <%s>\n", LOG_PREFIX, t->trader_fifo_id, buffer);
-				//check if the product exist
-				// check the type of the order
-				// check the price of the quantity and price
-				char *invalid_message = malloc(sizeof(char)* INPUT_LENGTH);
+				// check if the product exist
+				//  check the type of the order
+				//  check the price of the quantity and price
+				char *invalid_message = malloc(sizeof(char) * INPUT_LENGTH);
 				sprintf(invalid_message, "INVALID;");
-				char * order_type = strtok(buffer, " ");
-				if (order_type == NULL) {
+				char *order_type = strtok(buffer, " ");
+				if (order_type == NULL)
+				{
 					send_invalid_message_to_current_trader(t, invalid_message);
 					continue;
 				}
-				//TODO: handle error for all inputs with strtok
-				if (strcmp(CANCEL, order_type) == 0) {
-					//validate the id and process the cancel
+				// TODO: handle error for all inputs with strtok
+				if (strcmp(CANCEL, order_type) == 0)
+				{
+					// validate the id and process the cancel
 					char *id = strtok(NULL, ";");
-					if (id == NULL) {
+					if (id == NULL)
+					{
 						send_invalid_message_to_current_trader(t, invalid_message);
 						continue;
 					}
 					int order_id = atoi(id);
 					int cancelled = cancel_order(book, order_id, t, exchanging_products, traders, num_of_traders);
 					// remove the order from the orderbook
-					if (cancelled) {
+					if (cancelled)
+					{
 						char *msg = malloc(sizeof(char) * INPUT_LENGTH);
 						sprintf(msg, "CANCELLED %d;", order_id);
 						write_to_trader(t->exchange_fd, msg, strlen(msg));
 						send_signal_to_trader(t->trader_pid);
 						free(invalid_message);
 						free(msg);
-					} else {
-						//send invalid message
+					}
+					else
+					{
+						// send invalid message
 						send_invalid_message_to_current_trader(t, invalid_message);
 						continue;
 					}
-
-				} else if (strcmp(AMEND, order_type) == 0) {
+				}
+				else if (strcmp(AMEND, order_type) == 0)
+				{
 					// validate the id and ammend the order by given price and quantity
-					char * id = strtok(NULL, " ");
-					if (id == NULL) {
+					char *id = strtok(NULL, " ");
+					if (id == NULL)
+					{
 						send_invalid_message_to_current_trader(t, invalid_message);
 					}
 
 					int order_id = atoi(id);
 					char *qty = strtok(NULL, " ");
-					if (qty == NULL) {
+					if (qty == NULL)
+					{
 						send_invalid_message_to_current_trader(t, invalid_message);
 						continue;
 					}
 					long new_qty = atol(qty);
 					char *price = strtok(NULL, ";");
-					if (price == NULL) {
+					if (price == NULL)
+					{
 						send_invalid_message_to_current_trader(t, invalid_message);
 					}
 					long new_price = atol(price);
 					int updated = update_order(book, order_id, new_qty, new_price, t, traders, num_of_traders, exchanging_products);
-					if (updated) {
-						char* msg = malloc(sizeof(char) * INPUT_LENGTH);
+					if (updated)
+					{
+						char *msg = malloc(sizeof(char) * INPUT_LENGTH);
 						sprintf(msg, "AMENDED %d;", order_id);
 						write_to_trader(t->exchange_fd, msg, strlen(msg));
 						send_signal_to_trader(t->trader_pid);
 						free(invalid_message);
 						free(msg);
-					} else {
+					}
+					else
+					{
 						// send invalid
 						send_invalid_message_to_current_trader(t, invalid_message);
 						continue;
-
 					}
-				} else if (strcmp(BUY, order_type) == 0 || strcmp(SELL, order_type) == 0) {
+				}
+				else if (strcmp(BUY, order_type) == 0 || strcmp(SELL, order_type) == 0)
+				{
 					// validate the id and product
 					char *id = strtok(NULL, " ");
-					if (id == NULL) {
+					if (id == NULL)
+					{
 						send_invalid_message_to_current_trader(t, invalid_message);
 						continue;
 					}
 					int order_id = atoi(id);
-					if (order_id != t->current_order_id) {
+					if (order_id != t->current_order_id)
+					{
 						// send invalid
 						write_to_trader(t->exchange_fd, invalid_message, strlen(invalid_message));
 						send_signal_to_trader(t->trader_pid);
 						free(invalid_message);
 						continue;
 					}
-					char * product_name = strtok(NULL, " ");
-					if (product_name == NULL) {
+					char *product_name = strtok(NULL, " ");
+					if (product_name == NULL)
+					{
 						send_invalid_message_to_current_trader(t, invalid_message);
 					}
 					int product_exist = check_if_product_exist(exchanging_products, product_name);
-					if (!product_exist) {
+					if (!product_exist)
+					{
 						// send invalid
 						send_invalid_message_to_current_trader(t, invalid_message);
 						continue;
 					}
 					char *qty = strtok(NULL, " ");
-					if (qty == NULL) {
+					if (qty == NULL)
+					{
 						send_invalid_message_to_current_trader(t, invalid_message);
 						continue;
 					}
 					long quantity = atol(qty);
-					if (quantity < 1 || quantity > 999999) {
+					if (quantity < 1 || quantity > 999999)
+					{
 						// send invalid
 						send_invalid_message_to_current_trader(t, invalid_message);
 						continue;
 					}
 					char *p = strtok(NULL, ";");
-					if (p == NULL) {
+					if (p == NULL)
+					{
 						send_invalid_message_to_current_trader(t, invalid_message);
 						continue;
 					}
 					long price = atol(p);
-					if (price < 1 || price > 999999) {
+					if (price < 1 || price > 999999)
+					{
 						write_to_trader(t->exchange_fd, invalid_message, strlen(invalid_message));
 						send_signal_to_trader(t->trader_pid);
 						free(invalid_message);
 						continue;
 					}
-					//add order to the order book
+					// add order to the order book
 					struct order *new_order = enqueue_order(book, order_type, order_id, product_name, quantity, price, t);
-					//incerement the level of the product
-					if (new_order->num_of_orders == 1 && !new_order->is_same) {
+					// incerement the level of the product
+					if (new_order->num_of_orders == 1 && !new_order->is_same)
+					{
 						increment_level(exchanging_products, order_type, product_name);
 					}
 					// send the accept message
@@ -267,8 +308,10 @@ int main(int argc, char **argv)
 					// broadcast the message to other traders
 					char *market_message = malloc(sizeof(char) * INPUT_LENGTH);
 					sprintf(market_message, "MARKET %s %s %d %d;", order_type, product_name, (int)quantity, (int)price);
-					for (int i = 0; i < num_of_traders; i++) {
-						if (traders[i]->id != t->id && traders[i]->active_status) {
+					for (int i = 0; i < num_of_traders; i++)
+					{
+						if (traders[i]->id != t->id && traders[i]->active_status)
+						{
 							write_to_trader(traders[i]->exchange_fd, market_message, strlen(market_message));
 							send_signal_to_trader(traders[i]->trader_pid);
 						}
@@ -276,17 +319,21 @@ int main(int argc, char **argv)
 					free(market_message);
 					free(invalid_message);
 					// process the given order
-					if (strcmp(order_type, SELL) == 0) {
-						process_sell_order
-						(new_order, book, t, exchanging_products, write_fill_order, send_signal_to_trader, &TOTAL_FEES);
-					} else if (strcmp(order_type, BUY) == 0) {
+					if (strcmp(order_type, SELL) == 0)
+					{
+						process_sell_order(new_order, book, t, exchanging_products, write_fill_order, send_signal_to_trader, &TOTAL_FEES);
+					}
+					else if (strcmp(order_type, BUY) == 0)
+					{
 						// printf("%s buy order processing\n", LOG_PREFIX);
 						process_buy_order(new_order, book, t, exchanging_products, write_fill_order, send_signal_to_trader, &TOTAL_FEES);
 					}
 					// increment the trader's current order id
 					t->current_order_id++;
-				} else {
-					// Provided command is invalid. 
+				}
+				else
+				{
+					// Provided command is invalid.
 					write_to_trader(t->trader_fd, invalid_message, strlen(invalid_message));
 					send_signal_to_trader(t->trader_pid);
 					free(invalid_message);
@@ -294,24 +341,29 @@ int main(int argc, char **argv)
 				print_orderbook(book, exchanging_products);
 				print_position(exchanging_products, traders, num_of_traders);
 			}
-			else if (bytes_read == 0) {
+			else if (bytes_read == 0)
+			{
 				// end of file read reached
 				// do something
 			}
 		}
 		int active = 0;
-		for (int j = 0; j < num_of_traders; j++) {
-			if (TRADER_EXIT_STATUS == traders[j]->trader_pid) {
+		for (int j = 0; j < num_of_traders; j++)
+		{
+			if (TRADER_EXIT_STATUS == traders[j]->trader_pid)
+			{
 				printf("%s Trader %d disconnected\n", LOG_PREFIX, traders[j]->id);
 				traders[j]->active_status = 0;
 			}
-			if (traders[j]->active_status) {
+			if (traders[j]->active_status)
+			{
 				active++;
 			}
 		}
 		TRADER_EXIT_STATUS = -1;
 		TRADER_CONNECTION = -1;
-		if (active == 0) {
+		if (active == 0)
+		{
 			break;
 		}
 	}
