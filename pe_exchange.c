@@ -170,26 +170,28 @@ int main(int argc, char **argv)
 				else if (strcmp(AMEND, order_type) == 0)
 				{
 					// validate the id and ammend the order by given price and quantity
-					char *id = strtok(NULL, " ");
-					if (id == NULL)
-					{
-						send_invalid_message_to_current_trader(t, invalid_message);
-					}
+					// char *id = strtok(NULL, " ");
+					// if (id == NULL)
+					// {
+					// 	send_invalid_message_to_current_trader(t, invalid_message);
+					// }
+					int order_id = extract_int_value(invalid_message, t, send_invalid_message_to_current_trader, 1);
+					// int order_id = atoi(id);
+					// char *qty = strtok(NULL, " ");
+					// if (qty == NULL)
+					// {
+					// 	send_invalid_message_to_current_trader(t, invalid_message);
+					// 	continue;
+					// }
 
-					int order_id = atoi(id);
-					char *qty = strtok(NULL, " ");
-					if (qty == NULL)
-					{
-						send_invalid_message_to_current_trader(t, invalid_message);
-						continue;
-					}
-					long new_qty = atol(qty);
-					char *price = strtok(NULL, ";");
-					if (price == NULL)
-					{
-						send_invalid_message_to_current_trader(t, invalid_message);
-					}
-					long new_price = atol(price);
+					long new_qty = extract_int_value(invalid_message, t, send_invalid_message_to_current_trader, 0);
+					// char *price = strtok(NULL, ";");
+					// if (price == NULL)
+					// {
+					// 	send_invalid_message_to_current_trader(t, invalid_message);
+					// }
+
+					long new_price = extract_int_value(invalid_message, t, send_invalid_message_to_current_trader, 0);
 					int updated = update_order(book, order_id, new_qty, new_price, t, traders, num_of_traders, exchanging_products);
 					if (updated)
 					{
@@ -210,13 +212,13 @@ int main(int argc, char **argv)
 				else if (strcmp(BUY, order_type) == 0 || strcmp(SELL, order_type) == 0)
 				{
 					// validate the id and product
-					char *id = strtok(NULL, " ");
-					if (id == NULL)
-					{
-						send_invalid_message_to_current_trader(t, invalid_message);
-						continue;
-					}
-					int order_id = atoi(id);
+					// char *id = strtok(NULL, " ");
+					// if (id == NULL)
+					// {
+					// 	send_invalid_message_to_current_trader(t, invalid_message);
+					// 	continue;
+					// }
+					int order_id = extract_int_value(invalid_message, t, send_invalid_message_to_current_trader, 1);
 					if (order_id != t->current_order_id)
 					{
 						// send invalid
